@@ -1,0 +1,77 @@
+# Підключення MCP-серверів LeadDesk (Task B)
+
+Перевірено 03.10.2026 у Claude Code 2.1.288. Числа інструментів узято з події `init` сесії, а
+поведінку — з журналів сесій. Подробиці — у `docs/mcp/verification.md`, розділ Task B.
+
+- **Акаунти.** Лише особисті, без клієнтських організацій і команд:
+  - Supabase — особистий акаунт і одноразовий проєкт в особистій організації; на екрані згоди
+    вибрано лише її.
+  - Vercel — особистий Hobby-акаунт з особистою командою за замовчуванням.
+  - Figma — не використовували.
+- **Третій сервер — Playwright.**
+  - Чому: йому не потрібен акаунт і квота Figma (20 викликів на місяць на Starter).
+  - Урок про права тут гостріший: ядро сервера завжди вмикає `browser_run_code_unsafe`, і закрити
+    його можна лише deny на клієнті. Саме це ми й перевірили.
+- **Vercel CLI на цій машині не встановлено** (`command -v vercel` → not found).
+  - Додатково в `deny` стоять `Bash(vercel *)` і `Bash(npx vercel *)`.
+  - Правило перевірено живою спробою: `vercel whoami` із сесії → «Permission to use Bash … has been
+    denied».
+- **Конектори claude.ai.** В акаунті Claude підключено конектори, серед них claude.ai Supabase,
+  claude.ai Vercel і claude.ai Gmail. Вони з'являються в кожній CLI-сесії.
+  - Їхні інструменти мають інші імена, тож deny з `.claude/settings.json` на них не діє.
+  - `disabledMcpServers` у проєктних налаштуваннях їх не вимикає: перевірили за подією `init`.
+  - Тому кожну сесію домашки запускали з `ENABLE_CLAUDEAI_MCP_SERVERS=false`. З нею `init` показує
+    лише сервери проєкту.
+
+## Сервери
+
+| Сервер | Який доступ | Навіщо нам | Що станеться при компрометації | Чим саме звужено |
+|---|---|---|---|---|
+| `supabase` | Один проєкт `owtlfrumfipydwpedpid`, 9 інструментів: `list_tables`, `list_extensions`, `list_migrations`, `apply_migration`, `execute_sql`, `get_project_url`, `get_publishable_keys`, `generate_typescript_types`, `search_docs`. `execute_sql` ходить під роллю `postgres` (не superuser): читає й пише будь-які таблиці проєкту | Міграція схеми `leads` і сид 20 лідів для A/B (Task C) | OAuth-токен акаунта. `project_ref` і `features` — параметри URL на боці клієнта. Що дозволяє сам токен поза цим URL, ми не перевіряли, тому вважаємо: усе, на що дано згоду (DDL, дані, ключі). Тому організація одноразова, дані синтетичні, а `claude mcp remove` видаляє токен | `project_ref=` — лише цей проєкт, без account-інструментів. `features=database,development,docs` — без `account`, `functions`, `branching`. `apply_migration` і `execute_sql` — в `ask`: кожен виклик людина читає, і випадкове «don't ask again» це не скасує. В `allow` — лише 3 інструменти читання. Для `leads` увімкнено RLS без політик |
+| `vercel` | OAuth-токен — це користувач Vercel цілком (скоуп `openid`). Сервер віддає 234 інструменти REST API: деплої, домени й покупки, env-змінні, firewall, видалення проєктів | Знайти деплой і показати лог білду | Деплой довільного коду (preview з публічною адресою), читання й зміна env-змінних, купівля доменів і кредитів з картки команди, видалення проєктів, промоут або відкат production | 11 імен з walkthrough лишили в `deny`, хоча в поточному сервері їх немає. Справжнє звуження дають 39 deny-глобів за дієсловами (`mcp__vercel__create_*`, `delete_*`, `update_*`, `buy_*` …) і 9 точних імен, що читають токени й env: у сесії 126 інструментів, жоден не змінює стан. В `allow` — лише читання деплою й логу. CLI не встановлено, плюс deny на `Bash(vercel *)` |
+| `playwright` | Chrome у профілі в пам'яті: відкрити сторінку, клікати, вводити, читати DOM, консоль і мережу. Ядро має `browser_run_code_unsafe` (виконання коду в процесі сервера), `browser_evaluate`, а також `browser_file_upload` і `browser_drop`, які читають файли проєкту | Перевірити форму заявки на `localhost:3000` | Токена немає, ризик іде від сторінки. Ін'єкція з її тексту може привести до `browser_navigate` на адресу з даними в query (канал назовні), до виконання коду, до читання `.env.local` через `file_upload`. Сторінка може додати власні інструменти `webmcp_*` | Точна версія `@0.0.82`, `--isolated` (без логінів), `--no-webmcp`, `--allowed-origins http://localhost:3000` (зручність, не межа безпеки). `deny`: `run_code_unsafe`, `webmcp_*`, `file_upload`, `drop`, `evaluate`; `ask`: `browser_network_request`; в `allow` — 10 точних імен. Ніколи в одній сесії із Supabase чи `leaddesk` |
+| `leaddesk` (скоуп `local`, не в `.mcp.json`) | 2 інструменти й 1 ресурс над фікстурою з 20 синтетичних лідів. Читання — 6 полів без імені, email і тексту заявки. Зміна статусу — в пам'яті, з записом аудиту | Доменний сервер Task A, плече B у Task C | Локальний процес під вашим користувачем; змінює лише статуси в пам'яті. HTTP-варіант (E1) слухає `127.0.0.1:3333` без автентифікації: будь-який локальний процес може змінити статус | Статуси — лише enum `LEAD_STATUSES`; на чужий лід чи той самий статус — `isError`; точні версії й lockfile; у git нічого, бо скоуп `local` |
+
+## Supabase: схема й сид
+
+- **Міграція** `supabase/migrations/0001_leaddesk.sql` створює `public.leads`:
+  - `check` на п'ять статусів і на формат `^lead_[0-9]{4}$`;
+  - RLS увімкнено, політик немає, тож публічний ключ рядків не бачить.
+- **Сид** `supabase/seed/leads.sql`: 20 рядків `lead_0001`–`lead_0020`. Скрипт звірив його з
+  `materials/leads.json` поле в поле — 0 розбіжностей.
+- **Інструментів Supabase в `init`** з нашим URL: 9.
+- **Виклики й схвалення.**
+  - Без питань (в `allow`): `list_tables` → `[]`, `list_migrations` → `[]`.
+  - Ми схвалили вручну, прочитавши SQL:
+    - `apply_migration "leaddesk"` → `{"success":true}`;
+    - `execute_sql` з `insert` усіх 20 рядків;
+    - три `execute_sql` для перевірки: 20 рядків, RLS `true`, політик 0; роль `postgres`,
+      `is_superuser` → `off`.
+
+## Сесії: що вмикаємо разом
+
+У кожній сесії — щонайбільше один сервер із правом запису; браузерний сервер ніколи не працює разом
+із Supabase.
+
+| Крок | Увімкнено в сесії | Сервер із правом запису в цій сесії |
+|---|---|---|
+| Вхід (OAuth) | `supabase`, `vercel`, `playwright` (схвалення `.mcp.json`); агенту нічого не писали | — |
+| Міграція й сид | лише `supabase` (`--strict-mcp-config`) | `supabase` |
+| Лог білду | лише `vercel` (`--strict-mcp-config`) | `vercel`: у першій сесії `create_deployment` ще не був під deny і створив preview (див. verification.md); після звуження — жоден |
+| Перевірка форми й знімки «до/після» | лише `playwright` (`claude -p --strict-mcp-config`) | `playwright` (браузер) |
+| A/B (Task C) | A — лише `supabase` з `read_only=true`; B — лише `leaddesk` | A — жоден; B — `leaddesk` |
+
+## До і після звуження: третій сервер
+
+- **Як отримали перелік.**
+  - Нова сесія лише з `playwright`, той самий запит: «Перелічи всі інструменти сервера playwright,
+    які тобі зараз доступні. Нічого не викликай.»
+  - `claude-opus-5-5`, effort `high`. Жодного виклику не було, і в обох знімках набір збігся з
+    `init`.
+  - У «після» агент писав повні імена `mcp__playwright__…`; у файлі вони без префікса, як у «до».
+- `docs/mcp/evidence/mcp-before.txt`: **25** інструментів, серед них `browser_run_code_unsafe`.
+- `docs/mcp/evidence/mcp-after.txt`: **21** інструмент. Зникли `browser_run_code_unsafe`,
+  `browser_file_upload`, `browser_drop`, `browser_evaluate`; `webmcp_*` не було й до того завдяки
+  `--no-webmcp`.
+- **Атака.** На прохання викликати `browser_run_code_unsafe` і `browser_evaluate` агент отримав від
+  `ToolSearch` «No matching deferred tools found»: модель цих інструментів не бачить.
