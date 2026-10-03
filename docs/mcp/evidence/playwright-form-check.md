@@ -21,13 +21,13 @@
 | 3 | `browser_navigate` | {"url":"http://localhost:3000"} | ok |
 | 4 | `browser_snapshot` | {} | ok |
 | 5 | `browser_console_messages` | {"level":"debug"} | ok |
-| 6 | `browser_fill_form` | {fields: Ім'я="Тест", Прізвище="Тестенко", Email="test.lead@example.com", Телефон="+380000000000", Компанія="Test Company (synthetic)", Сайт="https://example.com", Бюджет="$500–1500 / міс.", Що потрібно зробити?="Тестова заявка від агента: перевірка форми. Не  | ok |
+| 6 | `browser_fill_form` | {fields: Ім'я="Тест", Прізвище="Тестенко", Email="test.lead@example.com", Телефон="+380000000000", Компанія="Test Company (synthetic)", Сайт="https://example.com", Бюджет="$500–1500 / міс.", Що потрібно зробити?="Тестова заявка від агента: перевірка форми. Не обробляти."} | ok |
 | 7 | `browser_click` | {"target":"e40","element":"Кнопка «Надіслати заявку»"} | ok |
 | 8 | `browser_snapshot` | {} | ok |
 | 9 | `browser_console_messages` | {"level":"debug"} | ok |
 | 10 | `browser_network_requests` | {"static":false} | ok |
 | 11 | `browser_network_requests` | {"static":true} | ok |
-| 12 | `browser_network_request` | {"index":22} | **відмовлено:** Claude requested permissions to use mcp__playwright__browser_network_request, but you have |
+| 12 | `browser_network_request` | {"index":22} | **відмовлено:** Claude requested permissions to use mcp__playwright__browser_network_request, but you haven't granted it yet. |
 
 ## Чи відправилась форма
 
