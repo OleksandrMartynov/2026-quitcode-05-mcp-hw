@@ -1,0 +1,83 @@
+{
+  "tools": [
+    {
+      "name": "leaddesk_find_leads",
+      "title": "Знайти ліди LeadDesk",
+      "description": "Показує ліди LeadDesk із заданим статусом, найновіші першими: id, компанія, статус, джерело, бюджет і дата заявки. Імен, email і тексту заявки не повертає. Лише читає дані.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "contacted",
+              "qualified",
+              "won",
+              "lost",
+              "any"
+            ],
+            "description": "Який статус шукати: new, contacted, qualified, won, lost; any — усі статуси. Що означає кожен — ресурс leaddesk://reference/statuses"
+          },
+          "limit": {
+            "default": 10,
+            "description": "Скільки лідів повернути, від 1 до 50 (за замовчуванням 10). Скільки їх усього, каже total у відповіді",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "leaddesk_set_lead_status",
+      "title": "Змінити статус ліда LeadDesk",
+      "description": "Змінює статус одного ліда LeadDesk і пише запис в аудит: старий і новий статус, причина, час. ЗМІНЮЄ ДАНІ: перед викликом скажіть людині, який лід і на який статус переводите, і дочекайтеся її підтвердження. Інших полів не змінює; невідомий лід або той самий статус — помилка без змін.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "leadId": {
+            "type": "string",
+            "pattern": "^lead_\\d{4}$",
+            "description": "Ідентифікатор ліда: lead_ і чотири цифри, напр. lead_0017. Беріть із відповіді leaddesk_find_leads"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "contacted",
+              "qualified",
+              "won",
+              "lost"
+            ],
+            "description": "Новий статус: new, contacted, qualified, won, lost. Має відрізнятися від поточного"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "description": "Чому змінюємо статус, 3–500 символів. Потрапляє в запис аудиту"
+          }
+        },
+        "required": [
+          "leadId",
+          "status",
+          "reason"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

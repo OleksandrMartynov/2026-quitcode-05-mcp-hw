@@ -1,0 +1,19 @@
+{
+  "name": "leaddesk-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LeadDesk as an MCP server (stdio): two business verbs over the lead fixture instead of SQL over the whole database. QuitCode Workshop 5, Task A.",
+  "type": "module",
+  "main": "src/server.mjs",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.1.0",
+    "zod": "4.6.5"
+  }
+}
