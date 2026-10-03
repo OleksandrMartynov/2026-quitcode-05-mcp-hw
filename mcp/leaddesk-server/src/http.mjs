@@ -11,8 +11,9 @@ import { createMcpHandler } from "@modelcontextprotocol/server";
 import { localhostHostValidation, localhostOriginValidation, toNodeHandler } from "@modelcontextprotocol/node";
 import { createLeadDeskServer } from "./leaddesk.mjs";
 
-const HOST = "127.0.0.1";
-const PORT = 3333;
+// Loopback only: the endpoint has no authentication. Exported so a test pins it.
+export const HOST = "127.0.0.1";
+export const PORT = 3333;
 
 // Messages only: they never carry lead data.
 const logError = (error) => console.error(`leaddesk http: ${error.message}`);

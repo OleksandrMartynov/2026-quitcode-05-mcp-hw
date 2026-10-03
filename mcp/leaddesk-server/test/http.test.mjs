@@ -4,7 +4,7 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { request } from "node:http";
 import { connect } from "node:net";
-import { createLeadDeskHttpServer } from "../src/http.mjs";
+import { HOST, PORT, createLeadDeskHttpServer } from "../src/http.mjs";
 
 const BODY = JSON.stringify({
   jsonrpc: "2.0",
@@ -43,6 +43,12 @@ function post(headers, path = "/mcp") {
     req.end(BODY);
   });
 }
+
+// The endpoint has no authentication: it must never listen beyond loopback.
+test("the entry listens on 127.0.0.1:3333 only", () => {
+  assert.equal(HOST, "127.0.0.1");
+  assert.equal(PORT, 3333);
+});
 
 test("tools/list over HTTP answers 200 with the two tools", async () => {
   const { status, body } = await post(HEADERS);
