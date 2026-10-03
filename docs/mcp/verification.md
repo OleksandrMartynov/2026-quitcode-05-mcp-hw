@@ -10,7 +10,7 @@
 - Сервер має два інструменти й ресурс.
 - Чотири JSON у `docs/mcp/` — вивід Inspector CLI 2.8.0, отриманий командами walkthrough (крок 4)
   без змін, з кореня репозиторію.
-- `npm test`: 16 з 16 тестів проходять, і кожна з 6 навмисних вад ловиться тестами.
+- `npm test` проходить, і кожна навмисна вада ловиться тестами.
 - У Claude Code сервер підключається, ресурс читається.
 
 | Файл | Код виходу | Що в ньому |
@@ -62,7 +62,8 @@ fixture = materials/leads.json
 - `reason`: «Чому змінюємо статус, 3–500 символів. Потрапляє в запис аудиту»
 
 **Тести.** `cd mcp/leaddesk-server && npm test` (`node --test`, без додаткових залежностей) →
-`ℹ tests 16 · ℹ pass 16 · ℹ fail 0`. Покривають:
+`ℹ tests 21 · ℹ pass 21 · ℹ fail 0`. З них 16 — Task A (`store`, `vocabulary`, `handlers`), ще 5 —
+HTTP-варіант (див. Task E). Тести Task A покривають:
 - збіг статусів з `LEAD_STATUSES` у `lib/types.ts` і формату id з `leadId()` у `lib/db.ts`;
 - лише шість полів у видачі — ні імені, ні email, ні тексту заявки ні в `structuredContent`, ні в
   тексті;
@@ -81,7 +82,7 @@ fixture = materials/leads.json
 | email у відповіді `find_leads` | 3 |
 | без сортування | 1 |
 | той самий статус проходить | 2 |
-| вигаданий статус `hot` | 3 |
+| вигаданий статус `hot` | 4 |
 | аудит не пишеться | 1 |
 | `limit` за замовчуванням 20 | 1 |
 
@@ -114,3 +115,56 @@ ENABLE_CLAUDEAI_MCP_SERVERS=false claude -p --model claude-sonnet-5 --effort low
   при цьому не вписати в описи даних з A/B: приклад id — `lead_0017`, а не `lead_0002`.
 - Модель читає `structuredContent`, а не текст. Отже, усе, що має дійти до моделі, мусить бути в
   структурі відповіді або в описах.
+
+## Task E (бонус)
+
+- **Варіант:** E1 — HTTP-варіант сервера із захистом Host/Origin.
+- **Код:** `mcp/leaddesk-server/src/http.mjs`.
+  - Та сама фабрика `createLeadDeskServer`, що в `server.mjs`.
+  - `createMcpHandler` з `@modelcontextprotocol/server` + `toNodeHandler` з `@modelcontextprotocol/node`
+    `2.1.0` (точна версія в `package.json`).
+  - Гварди `localhostHostValidation()` і `localhostOriginValidation()` викликано в обробнику запиту до
+    `mcp(req, res)`.
+  - Сервер слухає лише `127.0.0.1:3333`; шлях, інший ніж `/mcp`, отримує 404.
+  - Запуск — `npm run start:http`.
+- **Чотири `curl`** — команди з walkthrough дослівно (bash-скрипт; `body.json` лежить у локальній теці
+  поза git):
+
+| Запит | HTTP | Відповідь |
+|---|---|---|
+| звичайний | **200** | `{"result":{"tools":[{"name":"leaddesk_find_leads",…},{"name":"leaddesk_set_lead_status",…}]}}` |
+| `Host: evil.example` | **403** | `{"jsonrpc":"2.0","error":{"code":-32000,"message":"Invalid Host: evil.example"},"id":null}` |
+| `Origin: https://evil.example` | **403** | `{"jsonrpc":"2.0","error":{"code":-32000,"message":"Invalid Origin: evil.example"},"id":null}` |
+| без `MCP-Protocol-Version` | **400** | `{"jsonrpc":"2.0","error":{"code":-32020,"message":"Bad Request: the request headers and body disagree: …"},…}` |
+
+<details><summary>Сирий вивід чотирьох <code>curl</code></summary>
+
+```
+$ curl … http://127.0.0.1:3333/mcp                                   # expected 200
+{"result":{"tools":[{"name":"leaddesk_find_leads","title":"Знайти ліди LeadDesk","description":"Показує ліди LeadDesk із заданим статусом, найновіші першими: id, компанія, статус, джерело, бюджет і дата заявки. Імен, email і тексту заявки не повертає. Лише читає дані.","inputSchema":{"type":"object","$schema":"https://json-schema.org/draft/2020-12/schema","properties":{"status":{"type":"string","enum":["new","contacted","qualified","won","lost","any"],"description":"Який статус шукати: new, contacted, qualified, won, lost; any — усі статуси. Що означає кожен — ресурс leaddesk://reference/statuses"},"limit":{"default":10,"description":"Скільки лідів повернути, від 1 до 50 (за замовчуванням 10). Скільки їх усього, каже total у відповіді","type":"integer","minimum":1,"maximum":50}},"required":["status"]},"annotations":{"readOnlyHint":true,"openWorldHint":false}},{"name":"leaddesk_set_lead_status","title":"Змінити статус ліда LeadDesk","description":"Змінює статус одного ліда LeadDesk і пише запис в аудит: старий і новий статус, причина, час. ЗМІНЮЄ ДАНІ: перед викликом скажіть людині, який лід і на який статус переводите, і дочекайтеся її підтвердження. Інших полів не змінює; невідомий лід або той самий статус — помилка без змін.","inputSchema":{"type":"object","$schema":"https://json-schema.org/draft/2020-12/schema","properties":{"leadId":{"type":"string","pattern":"^lead_\\d{4}$","description":"Ідентифікатор ліда: lead_ і чотири цифри, напр. lead_0017. Беріть із відповіді leaddesk_find_leads"},"status":{"type":"string","enum":["new","contacted","qualified","won","lost"],"description":"Новий статус: new, contacted, qualified, won, lost. Має відрізнятися від поточного"},"reason":{"type":"string","minLength":3,"maxLength":500,"description":"Чому змінюємо статус, 3–500 символів. Потрапляє в запис аудиту"}},"required":["leadId","status","reason"]},"annotations":{"readOnlyHint":false,"openWorldHint":false}}],"resultType":"complete","ttlMs":0,"cacheScope":"private","_meta":{"io.modelcontextprotocol/serverInfo":{"name":"leaddesk","version":"0.1.0"}}},"jsonrpc":"2.0","id":1}
+HTTP 200
+$ curl … -H "Host: evil.example" …                                   # expected 403
+{"jsonrpc":"2.0","error":{"code":-32000,"message":"Invalid Host: evil.example"},"id":null}
+HTTP 403
+$ curl … -H "Origin: https://evil.example" …                         # expected 403
+{"jsonrpc":"2.0","error":{"code":-32000,"message":"Invalid Origin: evil.example"},"id":null}
+HTTP 403
+$ curl … without MCP-Protocol-Version …                              # expected 400, -32020
+{"jsonrpc":"2.0","error":{"code":-32020,"message":"Bad Request: the request headers and body disagree: the body envelope names protocol version 2026-07-28 but the required MCP-Protocol-Version header is absent","data":{"mismatch":{"header":"(missing)","body":"the body envelope names protocol version 2026-07-28 but the required MCP-Protocol-Version header is absent"}}},"id":1}
+HTTP 400
+```
+
+</details>
+
+- **Пастку перевірено атакою.** Контрольний варіант передавав гварди опцією:
+  `toNodeHandler(handler, { hostValidation: localhostHostValidation(), originValidation: localhostOriginValidation() })`.
+  Таких опцій у `toNodeHandler` немає. Запит із `Host: evil.example` отримав **HTTP 200**: опцію мовчки
+  проігноровано, як і попереджає walkthrough. У нашому `http.mjs` той самий запит дає 403. Контрольний
+  файл був тимчасовим і видалений одразу після перевірки.
+- **Автотести.** `test/http.test.mjs` повторює ці чотири перевірки й додає 404 на інший шлях; сервер
+  піднімається на вільному порту `127.0.0.1`. Мутації ловляться: без виклику `checkHost` падає 1
+  тест, без виклику `checkOrigin` — 1.
+- **Межі.** Автентифікації немає: це локальний режим розробника, а не віддалений сервер. Гварди
+  закривають DNS rebinding (чужий сайт у браузері звертається до `127.0.0.1`). Від інших процесів на
+  цій машині вони не захищають: будь-який локальний процес може викликати
+  `leaddesk_set_lead_status` через порт 3333.

@@ -62,6 +62,22 @@ claude mcp add leaddesk -- node "/абсолютний/шлях/до/репоз�
 
 У новій сесії `/mcp` показує `leaddesk` із двома інструментами. Прибрати — `claude mcp remove leaddesk`.
 
+## HTTP-варіант (бонус E1)
+
+```bash
+npm run start:http     # http://127.0.0.1:3333/mcp, лише loopback
+```
+
+Та сама фабрика, що й у stdio.
+- Гварди `localhostHostValidation()` і `localhostOriginValidation()` викликано в обробнику запиту до
+  MCP-обробника. Передані опцією в `toNodeHandler`, вони мовчки ігноруються.
+- Чужий `Host` чи `Origin` → 403, інший шлях, ніж `/mcp`, → 404.
+- Автентифікації немає: це локальний режим розробника, і будь-який процес на цій машині може
+  звернутися до порту.
+
+Перевірки `curl` — у `docs/mcp/verification.md`, розділ «Task E»; ті самі перевірки автоматизовано в
+`test/http.test.mjs`.
+
 ## Як влаштовано
 
 - `src/store.mjs` — фікстура → пам'ять, пошук, зміна статусу, аудит.
@@ -69,6 +85,7 @@ claude mcp add leaddesk -- node "/абсолютний/шлях/до/репоз�
   сервера. Сховище одне на процес, хоч скільки екземплярів сервера створить SDK.
 - `src/server.mjs` — `serveStdio(createLeadDeskServer)`. stdout — канал протоколу, сервер не пише в
   нього нічого іншого.
+- `src/http.mjs` — та сама фабрика через `createMcpHandler` і `toNodeHandler` (бонус E1).
 - Словник — із застосунку: статуси — `LEAD_STATUSES` з `lib/types.ts`, id — формат `leadId()` з
   `lib/db.ts`. Якщо вони розійдуться, впаде `test/vocabulary.test.mjs`.
 - `inputSchema` — об'єкт Zod-полів, як вимагає `mcp/README.md` (правило 7). SDK 2.1.0 позначає цю
