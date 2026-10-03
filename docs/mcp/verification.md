@@ -8,10 +8,26 @@
 
 **Підсумок.**
 - Сервер має два інструменти й ресурс.
-- Чотири JSON у `docs/mcp/` — вивід Inspector CLI 2.8.0, отриманий командами walkthrough (крок 4)
+- Чотири JSON у `docs/mcp/` — вивід Inspector CLI 2.8.0, отриманий командами з walkthrough (крок 4)
   без змін, з кореня репозиторію.
-- `npm test` проходить, і кожна навмисна вада ловиться тестами.
-- У Claude Code сервер підключається, ресурс читається.
+- `npm test`: 26 з 26 тестів проходять, і всі 13 навмисних вад мутаційної перевірки (таблиця нижче)
+  ловляться.
+- У Claude Code сервер підключається, а ресурс читається.
+
+Команди — дослівно з walkthrough, з кореня репозиторію (macOS, zsh):
+
+```bash
+npx -y @modelcontextprotocol/inspector@2.8.0 --cli node mcp/leaddesk-server/src/server.mjs \
+  --method tools/list > docs/mcp/tools-list.json
+npx -y @modelcontextprotocol/inspector@2.8.0 --cli node mcp/leaddesk-server/src/server.mjs \
+  --method tools/call --tool-name leaddesk_set_lead_status \
+  --tool-arg leadId=lead_0002 --tool-arg status=contacted --tool-arg "reason=перевірка в Inspector" > docs/mcp/set-status.json
+npx -y @modelcontextprotocol/inspector@2.8.0 --cli node mcp/leaddesk-server/src/server.mjs \
+  --method tools/call --tool-name leaddesk_set_lead_status \
+  --tool-arg leadId=nope --tool-arg status=won --tool-arg reason=ok > docs/mcp/bad-input.json; echo "exit=$?"
+npx -y @modelcontextprotocol/inspector@2.8.0 --cli node mcp/leaddesk-server/src/server.mjs \
+  --method resources/read --uri leaddesk://reference/statuses > docs/mcp/resource-read.json
+```
 
 | Файл | Код виходу | Що в ньому |
 |---|---|---|
@@ -34,8 +50,9 @@ $ grep -o '"action"\|"leadId"\|"at"' docs/mcp/set-status.json | sort -u
 "leadId"
 $ grep -rc 'console\.log' mcp/leaddesk-server/src
 mcp/leaddesk-server/src/leaddesk.mjs:0
-mcp/leaddesk-server/src/server.mjs:0
 mcp/leaddesk-server/src/store.mjs:0
+mcp/leaddesk-server/src/http.mjs:0
+mcp/leaddesk-server/src/server.mjs:0
 $ cmp materials/leads.json mcp/leaddesk-server/fixtures/leads.json && echo "fixture = materials/leads.json"
 fixture = materials/leads.json
 ```
@@ -62,8 +79,9 @@ fixture = materials/leads.json
 - `reason`: «Чому змінюємо статус, 3–500 символів. Потрапляє в запис аудиту»
 
 **Тести.** `cd mcp/leaddesk-server && npm test` (`node --test`, без додаткових залежностей) →
-`ℹ tests 21 · ℹ pass 21 · ℹ fail 0`. З них 16 — Task A (`store`, `vocabulary`, `handlers`), ще 5 —
-HTTP-варіант (див. Task E). Тести Task A покривають:
+`ℹ tests 26 · ℹ pass 26 · ℹ fail 0`. З них 20 — Task A, 6 — HTTP-варіант (див. Task E).
+
+Тести Task A покривають:
 - збіг статусів з `LEAD_STATUSES` у `lib/types.ts` і формату id з `leadId()` у `lib/db.ts`;
 - лише шість полів у видачі — ні імені, ні email, ні тексту заявки ні в `structuredContent`, ні в
   тексті;
@@ -72,7 +90,12 @@ HTTP-варіант (див. Task E). Тести Task A покривають:
 - помилки, які нічого не змінюють;
 - файл фікстури байт у байт той самий після змін;
 - відмову завантажити фікстуру з вигаданим id, вигаданим статусом чи дублем, зокрема через
-  `LEADDESK_FIXTURE`.
+  `LEADDESK_FIXTURE`;
+- `test/protocol.test.mjs`: справжній stdio-процес сервера через JSON-RPC — `initialize`,
+  `tools/list` (рівно два інструменти, `readOnlyHint`, «ЗМІНЮЄ ДАНІ» в описі, `description` у
+  кожного параметра), `resources/list` і `resources/read` (один ресурс, `text/markdown`),
+  `tools/call` з поганим входом → `isError`. Цей тест додано після рецензії: без нього зміну
+  анотацій чи ресурсу ловив лише знімок у `docs/mcp/`.
 
 **Мутаційна перевірка.** Кожну ваду вносили в код окремо, запускали `node --test` і відновлювали
 оригінал. Жодна вада не пройшла непоміченою:
@@ -82,11 +105,15 @@ HTTP-варіант (див. Task E). Тести Task A покривають:
 | email у відповіді `find_leads` | 3 |
 | без сортування | 1 |
 | той самий статус проходить | 2 |
-| вигаданий статус `hot` | 4 |
+| вигаданий статус `hot` | 8 |
 | аудит не пишеться | 1 |
 | `limit` за замовчуванням 20 | 1 |
+| `find_leads` з `readOnlyHint: false` | 1 |
+| опис `set_lead_status` без «ЗМІНЮЄ ДАНІ…» | 1 |
+| ресурс не зареєстровано | 1 |
+| ресурс як `text/plain` | 1 |
 
-**Смоук у Claude Code.** Запит не з A/B, у порожній теці поза репозиторієм. Конфіг
+**Смоук у Claude Code.** Запити не з A/B, у порожній теці поза репозиторієм. Конфіг
 `leaddesk-only.json` — лише `{"leaddesk": {"type": "stdio", "command": "node", "args":
 ["<репозиторій>/mcp/leaddesk-server/src/server.mjs"]}}`. Команда:
 
@@ -96,19 +123,39 @@ ENABLE_CLAUDEAI_MCP_SERVERS=false claude -p --model claude-sonnet-5 --effort low
   --output-format stream-json --verbose "Покажи два найновіші ліди у статусі contacted і поясни, що означає статус won для нашої команди."
 ```
 
-- **Подія `init`:** `mcp_servers: [{"name":"leaddesk","status":"connected"}]`.
 - **Ланцюжок:** `ToolSearch` (схеми MCP-інструментів Claude Code довантажує окремо) →
-  `leaddesk_find_leads {"status":"contacted","limit":2}` →
-  `ReadMcpResourceTool {"server":"leaddesk","uri":"leaddesk://reference/statuses"}`. Відмов у дозволі
-  не було.
-- **Що потрапляє до моделі.** У журналі сесії результат інструмента — JSON `structuredContent`, а
-  не текст відповіді, тож рядка «найновіші першими» модель не бачить.
-- **Порядок лідів.** Сервер віддав `lead_0008` (10.09) перед `lead_0014` (27.07). У першому прогоні
-  агент назвав обидва правильно, але переставив їх: «1. **Nova Dental** … заявка від 27.07.2026;
-  2. **Brick & Beam** … від 10.09.2026». Тому порядок записано ще й полем `order: "newest_first"`.
-  Другий прогін — у правильному порядку: `lead_0008 | Brick & Beam … 2026-09-10`, потім
-  `lead_0014 | Nova Dental … 2026-07-27`. Це по одному прогону до і після, тобто спостереження, а не
-  доказ.
+  `leaddesk_find_leads` → `ReadMcpResourceTool`. Відмов у дозволі не було.
+- **Що потрапляє до моделі.** Результат інструмента в журналі сесії — JSON `structuredContent`
+  (`{"status":"contacted","total":4,…}`), а не текст відповіді. Рядка «найновіші першими» модель
+  не бачить.
+- **Порядок лідів.** Сервер віддав `lead_0008` (10.09) перед `lead_0014` (27.07), але в першому
+  прогоні агент їх переставив. Тому порядок записано ще й полем `order: "newest_first"`. Другий
+  прогін — у правильному порядку. Це по одному прогону до і після, тобто спостереження, а не доказ.
+
+<details><summary>Витяг із журналів обох смоук-сесій (stream-json; сирі журнали не комітимо — у них локальні шляхи)</summary>
+
+```
+# smoke-a6.jsonl
+init: claude_code_version=2.1.278 model=claude-sonnet-5 mcp_servers=[{"name":"leaddesk","status":"connected"}]
+tool_use: ToolSearch {"query":"select:mcp__leaddesk__leaddesk_find_leads,ReadMcpResourceTool","max_results":5}
+tool_use: mcp__leaddesk__leaddesk_find_leads {"status":"contacted","limit":2}
+tool_result: {"status":"contacted","total":4,"returned":2,"leads":[{"id":"lead_0008","company":"Brick & Beam","status":"contacted","source":"website","budget":1500…
+tool_use: ReadMcpResourceTool {"server":"leaddesk","uri":"leaddesk://reference/statuses"}
+tool_result: {"contents":[{"uri":"leaddesk://reference/statuses","mimeType":"text/markdown","text":"# Статуси лідів LeadDesk\n\nСтатусів п'ять, інших не буває: `ne…
+answer: 1. **Nova Dental** — джерело facebook-ads, бюджет $2500, заявка від 27.07.2026
+answer: 2. **Brick & Beam** — джерело website, бюджет $1500, заявка від 10.09.2026
+# smoke-a6-2.jsonl
+init: claude_code_version=2.1.278 model=claude-sonnet-5 mcp_servers=[{"name":"leaddesk","status":"connected"}]
+tool_use: ToolSearch {"query":"select:mcp__leaddesk__leaddesk_find_leads,ReadMcpResourceTool","max_results":5}
+tool_use: mcp__leaddesk__leaddesk_find_leads {"status":"contacted","limit":2}
+tool_result: {"status":"contacted","order":"newest_first","total":4,"returned":2,"leads":[{"id":"lead_0008","company":"Brick & Beam","status":"contacted","source":…
+tool_use: ReadMcpResourceTool {"server":"leaddesk","uri":"leaddesk://reference/statuses"}
+tool_result: {"contents":[{"uri":"leaddesk://reference/statuses","mimeType":"text/markdown","text":"# Статуси лідів LeadDesk\n\nСтатусів п'ять, інших не буває: `ne…
+answer: | lead_0008 | Brick & Beam | website | $1500 | 2026-09-10 |
+answer: | lead_0014 | Nova Dental | facebook-ads | $2500 | 2026-07-27 |
+```
+
+</details>
 
 **Що було найважче в описах.**
 - Сказати в описі `leaddesk_set_lead_status`, що він змінює дані й потребує підтвердження людини, і
@@ -125,7 +172,8 @@ ENABLE_CLAUDEAI_MCP_SERVERS=false claude -p --model claude-sonnet-5 --effort low
     `2.1.0` (точна версія в `package.json`).
   - Гварди `localhostHostValidation()` і `localhostOriginValidation()` викликано в обробнику запиту до
     `mcp(req, res)`.
-  - Сервер слухає лише `127.0.0.1:3333`; шлях, інший ніж `/mcp`, отримує 404.
+  - Сервер слухає лише `127.0.0.1:3333`. Шлях, інший ніж `/mcp`, або нерозбірний — 404.
+  - Помилки пишуться в stderr (лише текст повідомлення) і з `createMcpHandler`, і з `toNodeHandler`.
   - Запуск — `npm run start:http`.
 - **Чотири `curl`** — команди з walkthrough дослівно (bash-скрипт; `body.json` лежить у локальній теці
   поза git):
@@ -161,10 +209,30 @@ HTTP 400
   Таких опцій у `toNodeHandler` немає. Запит із `Host: evil.example` отримав **HTTP 200**: опцію мовчки
   проігноровано, як і попереджає walkthrough. У нашому `http.mjs` той самий запит дає 403. Контрольний
   файл був тимчасовим і видалений одразу після перевірки.
-- **Автотести.** `test/http.test.mjs` повторює ці чотири перевірки й додає 404 на інший шлях; сервер
-  піднімається на вільному порту `127.0.0.1`. Мутації ловляться: без виклику `checkHost` падає 1
-  тест, без виклику `checkOrigin` — 1.
-- **Межі.** Автентифікації немає: це локальний режим розробника, а не віддалений сервер. Гварди
-  закривають DNS rebinding (чужий сайт у браузері звертається до `127.0.0.1`). Від інших процесів на
-  цій машині вони не захищають: будь-який локальний процес може викликати
-  `leaddesk_set_lead_status` через порт 3333.
+- **Що знайшло незалежне рецензування.** У першій версії шлях перевіряв `new URL(req.url, …)`, а на
+  `GET //` такий виклик кидав `TypeError`: необроблений виняток завершував процес і стирав зміни в
+  пам'яті. Тепер `URL.parse(…)?.pathname` дає 404, а обробник загорнуто в `try/catch` (500 замість
+  падіння). Повторна перевірка:
+
+```
+GET // → HTTP 404
+after it, tools/list → HTTP 200
+```
+
+- **Автотести.** `test/http.test.mjs` повторює ці чотири перевірки й додає 404 на інший шлях і на
+  нерозбірний (`//` і `GET http://[/` через сирий сокет), після чого сервер і далі відповідає 200.
+  Сервер піднімається на вільному порту `127.0.0.1`. Мутації ловляться:
+
+| Вада | Тестів упало |
+|---|---|
+| гвард Host не викликано | 1 |
+| гвард Origin не викликано | 1 |
+| шлях через `new URL` (падав на «//») | 1 |
+
+- **Межі.**
+  - Автентифікації немає: це локальний режим розробника, а не віддалений сервер.
+  - Гварди закривають DNS rebinding (чужий сайт у браузері звертається до `127.0.0.1`).
+  - Запит із правильним `Host` і без `Origin` проходить обидва гварди — так працюють `curl` та інші
+    не-браузерні клієнти.
+  - Від процесів на цій машині сервер не захищено: будь-який локальний процес може викликати
+    `leaddesk_set_lead_status` через порт 3333.

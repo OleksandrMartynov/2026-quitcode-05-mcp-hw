@@ -71,7 +71,8 @@ npm run start:http     # http://127.0.0.1:3333/mcp, лише loopback
 Та сама фабрика, що й у stdio.
 - Гварди `localhostHostValidation()` і `localhostOriginValidation()` викликано в обробнику запиту до
   MCP-обробника. Передані опцією в `toNodeHandler`, вони мовчки ігноруються.
-- Чужий `Host` чи `Origin` → 403, інший шлях, ніж `/mcp`, → 404.
+- Чужий `Host` чи `Origin` → 403, інший чи нерозбірний шлях, ніж `/mcp`, → 404.
+- Збої пишуться в stderr лише текстом повідомлення; клієнт отримує 500, процес працює далі.
 - Автентифікації немає: це локальний режим розробника, і будь-який процес на цій машині може
   звернутися до порту.
 
@@ -86,6 +87,8 @@ npm run start:http     # http://127.0.0.1:3333/mcp, лише loopback
 - `src/server.mjs` — `serveStdio(createLeadDeskServer)`. stdout — канал протоколу, сервер не пише в
   нього нічого іншого.
 - `src/http.mjs` — та сама фабрика через `createMcpHandler` і `toNodeHandler` (бонус E1).
+- `test/` — `store` і `handlers` (логіка й схеми), `vocabulary` (словник застосунку), `protocol`
+  (справжній stdio-процес через JSON-RPC: `tools/list`, `resources/*`, `tools/call`), `http` (E1).
 - Словник — із застосунку: статуси — `LEAD_STATUSES` з `lib/types.ts`, id — формат `leadId()` з
   `lib/db.ts`. Якщо вони розійдуться, впаде `test/vocabulary.test.mjs`.
 - `inputSchema` — об'єкт Zod-полів, як вимагає `mcp/README.md` (правило 7). SDK 2.1.0 позначає цю
