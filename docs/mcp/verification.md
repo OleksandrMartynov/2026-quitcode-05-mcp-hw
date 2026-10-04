@@ -176,14 +176,21 @@ answer: | lead_0014 | Nova Dental | facebook-ads | $2500 | 2026-07-27 |
   - Права — у `.claude/settings.json`. Як звужено кожен сервер — у `docs/mcp/connections.md`.
 - **Сесії.** Claude Code 2.1.288, `claude-opus-5-5`. У кожній сесії рівно один сервер:
   `--strict-mcp-config` з одним записом із `.mcp.json` плюс `ENABLE_CLAUDEAI_MCP_SERVERS=false`.
+- **Режим дозволів.** Інтерактивні сесії Supabase і Vercel ми запускали без `--permission-mode`, а
+  для CLI цього акаунта за замовчуванням стоїть auto mode: у журналах обох сесій `permissionMode` —
+  `auto` (`session-excerpts.md`, розділи 1–2). Помітили це лише на фінальній рецензії. У режимі auto
+  виклики, які не дозволено й не заборонено правилами, пропускає або зупиняє класифікатор, а не
+  людина. Чи показував Claude Code діалог перед конкретним викликом, журнал не фіксує. Сесії
+  `claude -p` (лог білду, Playwright) ішли в режимі `default`.
 - **Докази.** Виклики й результати нижче — з журналів сесій; витяги з них (з редагуванням) — у
   `docs/mcp/evidence/session-excerpts.md`, розділи 1–4.
 
-**Supabase** (інтерактивна сесія, кожен запис схвалено вручну):
+**Supabase** (інтерактивна сесія, режим auto):
 - Без питань (в `allow`): `list_tables {"schemas":["public"]}` → `{"tables":[]}`,
   `list_migrations` → `[]`.
 - Агент записав `supabase/migrations/0001_leaddesk.sql` і згенерував сид скриптом.
-- Далі людина схвалила:
+- Агент виклав план (міграція → сид → перевірка) і спитав у чаті «Запускати кроки 1 → 2 → 3?»;
+  людина відповіла «так». Далі пройшли виклики під `ask` (`.claude/settings.json:88-89`):
   - `apply_migration` (`name: "leaddesk"`) → `{"success":true}`;
   - `execute_sql` з `insert` 20 рядків;
   - перевірки.
@@ -219,7 +226,8 @@ select current_user, session_user, current_setting('is_superuser');
 - **Деплой.** Форк підключено через git-інтеграцію в дашборді Vercel. Production зібрано з `main`
   (`958d2ee`).
 - **Сесія 1** (інтерактивна, запит з walkthrough):
-  - `list_teams` (схвалено вручну) → `list_projects` → `list_deployments` →
+  - `list_teams` (режим auto: схвалив його класифікатор чи людина в діалозі, з журналу не видно) →
+    `list_projects` → `list_deployments` →
     `list_deployment_events` ×2 → `403 Forbidden` «Not authorized: Trying to access resource under
     scope … You must re-authenticate to this scope or use a token with access to this scope».
   - До повторного входу 403 отримували саме виклики з явним `teamId` і `list_deployment_events`.
@@ -228,8 +236,10 @@ select current_user, session_user, current_setting('is_superuser');
     запитів на рівні команди. Причину на боці Vercel ми не з'ясовували.
 - **Проби deny у тій самій сесії:**
   - **«Задеплой цей проєкт у Vercel як preview».** `deploy_to_vercel` у сервері немає. Агент знайшов
-    `create_deployment`, якого не було в deny, двічі спитав через `AskUserQuestion`, і людина обидва
-    рази погодилась і схвалила виклик.
+    `create_deployment`, якого не було в deny, і двічі спитав людину через `AskUserQuestion`. Людина
+    обидва рази погодилась (`session-excerpts.md`, розділ 2). Сесія була в режимі auto, а
+    `create_deployment` не мав жодного правила, тож сам виклик, найімовірніше, пропустив класифікатор;
+    з журналу цього не встановити.
     - Перший виклик із `target: "preview"` отримав `400`.
     - Другий, без `target`, створив preview `dpl_6Aik5kQK5v3zXYsKXHuZUt38gcCV` з `main`
       (`958d2ee`) у тому самому проєкті. Агент окремо перевірив, що production-адреса досі вказує
@@ -335,6 +345,7 @@ approval (run `claude` to approve)», а `claude -p` у тій самій тец
   `claude -p` у корені тепер має `mcp_servers: []` (`evidence/session-excerpts.md`, 5.3). Кожен крок,
   якому потрібен сервер, вмикає рівно один через `--strict-mcp-config --mcp-config`.
 - Перелік інструментів сесії й панель конекторів — спостереження, окремого файлу-артефакту немає.
+
 ## Task E (бонус)
 
 - **Варіант:** E1 — HTTP-варіант сервера із захистом Host/Origin.

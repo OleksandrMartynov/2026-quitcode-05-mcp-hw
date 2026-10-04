@@ -16,7 +16,7 @@
 
 ## 1. Supabase: міграція й сид (сесія 342d7eda…, Claude Code 2.1.288, 03.10.2026)
 
-Запуск: `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --strict-mcp-config --mcp-config <лише supabase>`, інтерактивно.
+Запуск: `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --strict-mcp-config --mcp-config <лише supabase>`, інтерактивно, без `--permission-mode`. Режим дозволів за журналом (поле `permissionMode`): `auto` (11 записів) — auto mode стоїть за замовчуванням для CLI цього акаунта. Чи показував Claude Code діалог перед кожним викликом, журнал не фіксує.
 
 **Людина:** створи міграцією таблицю leads за полями з materials/leads.json; статус — лише new, contacted, qualified, won або lost; id — у форматі lead_ і чотири цифри; увімкни RLS без політик. SQL міграції збережи в supabase/migrations/0001_leaddesk.sql. Потім заповни таблицю всіма 20 рядками з materials/leads.json і збережи ті самі insert у supabase/seed/leads.sql. Нічого іншого в проєкті не змінюй.
 
@@ -76,7 +76,7 @@
 
 ## 2. Vercel: перша сесія — лог, проба deny, Vercel CLI (сесія 8513b190…, Claude Code 2.1.288, 03.10.2026)
 
-Запуск: `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --strict-mcp-config --mcp-config <лише vercel>`, інтерактивно. Для Vercel у deny тоді були лише 11 імен з walkthrough.
+Запуск: `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --strict-mcp-config --mcp-config <лише vercel>`, інтерактивно, без `--permission-mode`. Для Vercel у deny тоді були лише 11 імен з walkthrough. Чи показував Claude Code діалог дозволу перед кожним викликом, журнал не фіксує. Режим дозволів за журналом (поле `permissionMode`): `auto` (14 записів).
 
 **Людина:** Знайди останній деплой мого проєкту LeadDesk у Vercel і покажи лог його білду. Нічого не деплой і не змінюй.
 
@@ -198,7 +198,7 @@ vercel: not found in PATH
 
 ## 3. Vercel: лог білду після повторного входу (`claude -p`, Claude Code 2.1.288, 03.10.2026)
 
-Запуск: `claude -p --strict-mcp-config --mcp-config <лише vercel>`; той самий запит. Повний текст 76 подій — у `vercel-build-log.txt`.
+Запуск: `claude -p --strict-mcp-config --mcp-config <лише vercel>`; той самий запит. Повний текст 76 подій — у `vercel-build-log.txt`. Режим дозволів за журналом (поле `permissionMode`): `default` (1 записів).
 
 - `Read`: файл авто-пам'яті Claude Code цієї теки (`~/.claude/projects/…/memory/ws5-homework-plan.md`) — вміст не наводимо
 
@@ -225,13 +225,13 @@ vercel: not found in PATH
 **4.1. Три сесії: знімки «до» і «після» та перевірка форми.** Для кожної — подія `init`, скільки в ній інструментів `mcp__playwright__*`, усі виклики по порядку й відмови в дозволі (`permission_denials` з події `result`):
 
 ```
-«до» (mcp-before.txt): Claude Code 2.1.288, claude-opus-5-5, mcp_servers ["playwright:connected"], інструментів playwright: 25
+«до» (mcp-before.txt): Claude Code 2.1.288, claude-opus-5-5, permissionMode default, mcp_servers ["playwright:connected"], інструментів playwright: 25
   виклики (0): —
   permission_denials: []
-«після» (mcp-after.txt): Claude Code 2.1.288, claude-opus-5-5, mcp_servers ["playwright:connected"], інструментів playwright: 21
+«після» (mcp-after.txt): Claude Code 2.1.288, claude-opus-5-5, permissionMode default, mcp_servers ["playwright:connected"], інструментів playwright: 21
   виклики (0): —
   permission_denials: []
-перевірка форми (playwright-form-check.md): Claude Code 2.1.288, claude-opus-5-5, mcp_servers ["playwright:connected"], інструментів playwright: 21
+перевірка форми (playwright-form-check.md): Claude Code 2.1.288, claude-opus-5-5, permissionMode default, mcp_servers ["playwright:connected"], інструментів playwright: 21
   виклики (12): ToolSearch → Bash "curl -s -o /dev/null -w \"%{http_code}\\n\" --max-time 5 http://localhost:3000/" → browser_navigate → browser_snapshot → browser_console_messages → browser_fill_form → browser_click → browser_snapshot → browser_console_messages → browser_network_requests → browser_network_requests → browser_network_request
   permission_denials: ["Bash curl -s -o /dev/null -w \"%{http_code}\\n\" --max-time 5 http://localhost:3000/","mcp__playwright__browser_network_request"]
 ```

@@ -45,9 +45,12 @@
 - **Сид** `supabase/seed/leads.sql`: 20 рядків `lead_0001`–`lead_0020`. Скрипт звірив його з
   `materials/leads.json` поле в поле — 0 розбіжностей.
 - **Інструментів Supabase в `init`** з нашим URL: 9.
-- **Виклики й схвалення** (`session-excerpts.md`, розділ 1).
+- **Виклики й схвалення** (`session-excerpts.md`, розділ 1). Сесію запущено без `--permission-mode`,
+  тож вона йшла в auto mode — режимі за замовчуванням для CLI цього акаунта (`permissionMode: auto` у
+  журналі).
   - Без питань (в `allow`): `list_tables` → `{"tables":[]}`, `list_migrations` → `{"migrations":[]}`.
-  - Ми схвалили вручну, прочитавши SQL:
+  - Людина погодила план у чаті («Запускати кроки 1 → 2 → 3?» → «так»). Далі пройшли виклики під
+    `ask`; чи був окремий діалог перед кожним, журнал не фіксує:
     - `apply_migration "leaddesk"` → `{"success":true}`;
     - `execute_sql` з `insert` усіх 20 рядків;
     - три `execute_sql` для перевірки: 20 рядків, RLS `true`, політик 0; роль `postgres`,
@@ -63,11 +66,11 @@
 | Крок | Увімкнено в сесії | Сервер із правом запису в цій сесії |
 |---|---|---|
 | Вхід (OAuth) | `supabase`, `vercel`, `playwright` (схвалення `.mcp.json`, walkthrough, крок 2; `/exit` одразу після входу); агенту нічого не писали | — (агенту нічого не писали; формально `supabase` і `vercel` мають право запису) |
-| Міграція й сид | лише `supabase` (`--strict-mcp-config`) | `supabase` |
-| Лог білду | лише `vercel` (`--strict-mcp-config`) | `vercel`: у першій сесії `create_deployment` ще не був під deny і створив preview (див. verification.md). Лог у `evidence/vercel-build-log.txt` — саме цього preview. Preview людина вирішила лишити: у проєкті `ssoProtection` (`all_except_custom_domains`), тож без входу у Vercel він не відкривається. Після звуження записуючих інструментів немає |
+| Міграція й сид | лише `supabase` (`--strict-mcp-config`; режим auto) | `supabase` |
+| Лог білду | лише `vercel` (`--strict-mcp-config`; перша сесія — інтерактивна в режимі auto, лог — `claude -p` у режимі `default`) | `vercel`: у першій сесії `create_deployment` ще не був під deny і створив preview (див. verification.md). Лог у `evidence/vercel-build-log.txt` — саме цього preview. Preview людина вирішила лишити: у проєкті `ssoProtection` (`all_except_custom_domains`), тож без входу у Vercel він не відкривається. Після звуження записуючих інструментів немає |
 | Перевірка форми й знімки «до/після» | лише `playwright` (`claude -p --strict-mcp-config`) | `playwright` (браузер) |
 | A/B (Task C) | A — лише `supabase` з `read_only=true`; B — лише `leaddesk` | A — жоден; B — `leaddesk` |
-| Основна робоча сесія (десктоп-застосунок Claude, корінь репозиторію) | **До 04.10:** `supabase`, `vercel`, `playwright` разом — схвалення з кроку входу записалось у `.claude/settings.local.json` як `enabledMcpjsonServers`; плюс браузерні інструменти самого застосунку. Жодного виклику цих серверів у сесії не було: скрипт перевірив журнали сесії і всіх її субагентів (`verification.md`, «Спостереження…»). **З 04.10:** `disabledMcpjsonServers` з усіма трьома (той самий файл, у `.gitignore`); сесія від'єднала всі три, `claude -p` у корені — `mcp_servers: []` (`session-excerpts.md`, 5.3) | до 04.10 — `supabase` і `vercel` разом із браузером, тобто порушення правила вище (див. `threat-model.md`); з 04.10 — жоден |
+| Основна робоча сесія (десктоп-застосунок Claude, корінь репозиторію; режим auto) | **До 04.10:** `supabase`, `vercel`, `playwright` разом — схвалення з кроку входу записалось у `.claude/settings.local.json` як `enabledMcpjsonServers`; плюс браузерні інструменти самого застосунку. Жодного виклику цих серверів у сесії не було: скрипт перевірив журнали сесії і всіх її субагентів (`verification.md`, «Спостереження…»). **З 04.10:** `disabledMcpjsonServers` з усіма трьома (той самий файл, у `.gitignore`); сесія від'єднала всі три, `claude -p` у корені — `mcp_servers: []` (`session-excerpts.md`, 5.3) | до 04.10 — `supabase` і `vercel` разом із браузером, тобто порушення правила вище (див. `threat-model.md`); з 04.10 — жоден |
 
 ## До і після звуження: третій сервер
 
