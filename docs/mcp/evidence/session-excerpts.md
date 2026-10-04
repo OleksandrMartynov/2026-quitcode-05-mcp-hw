@@ -265,7 +265,7 @@ No matching deferred tools found
 
 ## 5. Перевірки Claude Code (04.10.2026, Claude Code 2.1.288)
 
-Сесії `claude -p --model claude-haiku-4-5-20251001 --output-format stream-json`, у 5.1–5.2 ще й `--permission-mode default`. Дозвіл на виклик дає не модель, а правила Claude Code; модель лише просить інструмент.
+Сесії `claude -p --model claude-haiku-4-5-20251001 --output-format stream-json`, у 5.1, 5.2 і 5.5 ще й `--permission-mode default`. Дозвіл на виклик дає не модель, а правила Claude Code; модель лише просить інструмент.
 
 **5.1. `deny: Bash(vercel *)` з `.claude/settings.json`.** Корінь репозиторію:
 
@@ -329,6 +329,21 @@ $ claude mcp list
 Checking MCP server health…
 
 leaddesk: node ~/Work/Agentic Development Course/05/mcp/leaddesk-server/src/server.mjs - ⏸ Pending approval (run `claude` to approve)
+```
+
+**5.5. `ask` сильніший за `allow`.** За документацією Claude Code «don't ask again» у діалозі зберігає дозвіл як правило `allow`. Чи скасує воно наше `ask`? Порожня тека, те саме правило в `--settings` двічі: в `allow` і `ask` разом, потім лише в `allow`. У `claude -p` діалогу немає, тож `ask` означає «не дозволено»:
+
+```
+== both settings={"permissions":{"allow":["Bash(touch *)"],"ask":["Bash(touch *)"]}}
+tool_use: Bash {"command":"touch probe.txt"}
+tool_result (is_error: true): Claude requested permissions to use Bash, but you haven't granted it yet.
+permission_denials: ["Bash touch probe.txt"]
+probe.txt absent
+== allowonly settings={"permissions":{"allow":["Bash(touch *)"]}}
+tool_use: Bash {"command":"touch probe.txt"}
+tool_result (is_error: false): (Bash completed with no output)
+permission_denials: []
+probe.txt created
 ```
 
 ## 6. Task A: коди виходу Inspector, мутації, пастка E1
