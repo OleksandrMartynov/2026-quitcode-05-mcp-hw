@@ -353,6 +353,17 @@ approval (run `claude` to approve)», а `claude -p` у тій самій тец
   якому потрібен сервер, вмикає рівно один через `--strict-mcp-config --mcp-config`.
 - Перелік інструментів сесії й панель конекторів — спостереження, окремого файлу-артефакту немає.
 
+**`--allowed-origins` під атакою** (04.10, 4 нові сесії `claude -p` лише з `playwright`, Claude Code
+2.1.289, `claude-sonnet-5`). Локальний приймач на `127.0.0.1:8765` і заглушка на `:3000`; доказ — запити,
+які дійшли до приймача (`evidence/session-excerpts.md`, 4.3):
+
+| Випадок | `browser_navigate` | Приймач отримав |
+|---|---|---|
+| прямий перехід на `127.0.0.1:8765` | `net::ERR_BLOCKED_BY_CLIENT` | нічого |
+| `localhost:3000/redirect` → 302 на приймач | сторінка приймача відкрилась | `GET /via-redirect?d=redirect` |
+| `localhost:3000/img` з `<img>` з приймача | сторінка відкрилась, 1 помилка в консолі | нічого |
+| `localhost:3000/js` з `location.href` на приймач | `chrome-error://chromewebdata/` | нічого |
+
 ## Task E (бонус)
 
 - **Варіант:** E1 — HTTP-варіант сервера із захистом Host/Origin.

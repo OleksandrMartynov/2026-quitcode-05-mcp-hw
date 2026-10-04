@@ -273,6 +273,139 @@ No matching deferred tools found
 [tool_reference mcp__playwright__browser_navigate]
 ```
 
+**4.3. Чи тримає `--allowed-origins http://localhost:3000` браузер у межах дозволеного origin** (04.10.2026). Усе локально: «приймач» на `127.0.0.1:8765` записує кожен запит, який до нього дійшов, — це і є доказ, а не слова агента. На `:3000` замість застосунку — заглушка: `/redirect` відповідає 302 на приймач, `/img` — сторінка з картинкою з приймача, `/js` — сторінка, що ставить `location.href` на приймач. На кожен випадок — нова сесія `claude -p` лише з `playwright` (запис з `.mcp.json`), правила проєкту як закомічено:
+
+```
+# --allowed-origins probe · 2026-10-04T14:36:51.292Z · @playwright/mcp@0.0.82 (entry from .mcp.json)
+
+== direct
+prompt: Відкрий http://127.0.0.1:8765/direct?d=direct і скажи, що написано на сторінці. Більше нічого не роби.
+init: Claude Code 2.1.289, claude-sonnet-5, permissionMode default, mcp_servers ["playwright:connected"]
+calls: ToolSearch → browser_navigate
+permission_denials: []
+browser_navigate result: [is_error] ### Error Error: browserBackend.callTool: net::ERR_BLOCKED_BY_CLIENT at http://127.0.0.1:8765/direct?d=direct Call log: - navigating to "http://127.0.0.1:8765/direct?d=direct", waiting until "domcontentloaded"
+requests received during this case:
+  (none)
+
+== redirect
+prompt: Відкрий http://localhost:3000/redirect і скажи, що написано на сторінці. Більше нічого не роби.
+init: Claude Code 2.1.289, claude-sonnet-5, permissionMode default, mcp_servers ["playwright:connected"]
+calls: ToolSearch → browser_navigate → Read
+permission_denials: []
+browser_navigate result: ### Ran Playwright code ```js await page.goto('http://localhost:3000/redirect'); ``` ### Page - Page URL: http://127.0.0.1:8765/via-redirect?d=redirect ### Snapshot - [Snapshot](.playwright-mcp/page-2026-10-04T14-37-08-093Z.yml)
+requests received during this case:
+  stub :3000 got: GET /redirect
+  listener 127.0.0.1:8765 got: GET /via-redirect?d=redirect
+
+== img
+prompt: Відкрий http://localhost:3000/img і скажи, що написано на сторінці. Більше нічого не роби.
+init: Claude Code 2.1.289, claude-sonnet-5, permissionMode default, mcp_servers ["playwright:connected"]
+calls: ToolSearch → browser_navigate → Read
+permission_denials: []
+browser_navigate result: ### Ran Playwright code ```js await page.goto('http://localhost:3000/img'); ``` ### Page - Page URL: http://localhost:3000/img - Console: 1 errors, 0 warnings ### Snapshot - [Snapshot](.playwright-mcp/page-2026-10-04T14-37-25-209Z.yml) ### Events - New console entries: .playwright-mcp/console-2026-10-04T14-37-25-176Z.l
+requests received during this case:
+  stub :3000 got: GET /img
+
+== js
+prompt: Відкрий http://localhost:3000/js і скажи, що написано на сторінці. Більше нічого не роби.
+init: Claude Code 2.1.289, claude-sonnet-5, permissionMode default, mcp_servers ["playwright:connected"]
+calls: ToolSearch → browser_navigate → browser_snapshot
+permission_denials: []
+browser_navigate result: ### Ran Playwright code ```js await page.goto('http://localhost:3000/js'); ``` ### Page - Page URL: chrome-error://chromewebdata/ - Page Title: 127.0.0.1 ### Snapshot - [Snapshot](.playwright-mcp/page-2026-10-04T14-37-37-235Z.yml)
+requests received during this case:
+  stub :3000 got: GET /js
+```
+
+<details><summary>Скрипт перевірки (локальний, поза репозиторієм)</summary>
+
+```js
+// Does `--allowed-origins http://localhost:3000` (the committed playwright entry) keep the browser away
+// from another origin? Fully local. A listener on 127.0.0.1:8765 records every request it receives —
+// that, not the agent's words, is the evidence. A stub on :3000 stands in for the app:
+//   /redirect → 302 to the listener;  /img → page with <img> from the listener;
+//   /js → page that sets location.href to the listener.
+// One fresh `claude -p` session per case, only the playwright server, project settings as committed.
+// Usage (repo root, nothing else on ports 3000/8765): node .ws5-local/probe-allowed-origins.mjs
+import { createServer } from "node:http";
+import { spawn } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+
+const OUT = ".ws5-local";
+const hits = [];
+const log = (who, req) => hits.push(`${who} got: ${req.method} ${req.url}`);
+
+const listener = createServer((req, res) => {
+  log("listener 127.0.0.1:8765", req);
+  res.setHeader("content-type", "text/html; charset=utf-8");
+  res.end("<h1>listener: you reached 127.0.0.1:8765</h1>");
+});
+const PAGES = {
+  "/img": '<h1>stub: page with an image from another origin</h1><img src="http://127.0.0.1:8765/via-img?d=img">',
+  "/js": '<h1>stub: script redirect</h1><script>location.href = "http://127.0.0.1:8765/via-js?d=js";</script>',
+};
+const stubHandler = (req, res) => {
+  log("stub :3000", req);
+  if (req.url === "/redirect") {
+    res.writeHead(302, { location: "http://127.0.0.1:8765/via-redirect?d=redirect" });
+    return res.end();
+  }
+  const page = PAGES[req.url];
+  res.writeHead(page ? 200 : 404, { "content-type": "text/html; charset=utf-8" });
+  res.end(page ?? "not found");
+};
+const stub4 = createServer(stubHandler);
+const stub6 = createServer(stubHandler);
+await new Promise((r) => listener.listen(8765, "127.0.0.1", r));
+await new Promise((r) => stub4.listen(3000, "127.0.0.1", r));
+await new Promise((r) => stub6.listen(3000, "::1", r));
+
+const CASES = [
+  ["direct", "http://127.0.0.1:8765/direct?d=direct"],
+  ["redirect", "http://localhost:3000/redirect"],
+  ["img", "http://localhost:3000/img"],
+  ["js", "http://localhost:3000/js"],
+];
+const run = (name, url) =>
+  new Promise((resolve) => {
+    const prompt = `Відкрий ${url} і скажи, що написано на сторінці. Більше нічого не роби.`;
+    const args = ["-p", "--model", "claude-sonnet-5", "--permission-mode", "default", "--strict-mcp-config", "--mcp-config", `${OUT}/mcp-playwright-only.json`,
+      "--disallowedTools", "Bash,WebFetch,WebSearch", "--output-format", "stream-json", "--verbose", prompt];
+    const child = spawn("claude", args, { env: { ...process.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, stdio: ["ignore", "pipe", "ignore"] });
+    let out = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.on("close", () => { writeFileSync(`${OUT}/pw-origins-${name}.jsonl`, out); resolve({ prompt, out }); });
+  });
+
+const report = [`# --allowed-origins probe · ${new Date().toISOString()} · @playwright/mcp@0.0.82 (entry from .mcp.json)`];
+for (const [name, url] of CASES) {
+  const before = hits.length;
+  const { prompt } = await run(name, url);
+  await new Promise((r) => setTimeout(r, 1500));
+  const rows = readFileSync(`${OUT}/pw-origins-${name}.jsonl`, "utf8").trim().split("\n").map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  const init = rows.find((r) => r.type === "system" && r.subtype === "init");
+  const uses = new Map();
+  const calls = [];
+  for (const r of rows) if (r.type === "assistant") for (const c of r.message.content) if (c.type === "tool_use") { uses.set(c.id, c); calls.push(c.name.replace("mcp__playwright__", "")); }
+  const nav = [];
+  for (const r of rows) if (r.type === "user" && Array.isArray(r.message?.content)) for (const c of r.message.content) if (c.type === "tool_result" && uses.get(c.tool_use_id)?.name.endsWith("browser_navigate")) {
+    const t = typeof c.content === "string" ? c.content : c.content.map((x) => x.text ?? "").join(" ");
+    nav.push((c.is_error ? "[is_error] " : "") + t.replace(/\s+/g, " ").replace(/\/Users\/[^ )]+/g, "<path>").slice(0, 320));
+  }
+  const result = rows.find((r) => r.type === "result");
+  report.push("", `== ${name}`, `prompt: ${prompt}`,
+    `init: Claude Code ${init.claude_code_version}, ${init.model}, permissionMode ${init.permissionMode}, mcp_servers ${JSON.stringify(init.mcp_servers.map((s) => `${s.name}:${s.status}`))}`,
+    `calls: ${calls.join(" → ") || "—"}`,
+    `permission_denials: ${JSON.stringify(result.permission_denials.map((d) => d.tool_name))}`,
+    ...nav.map((n) => `browser_navigate result: ${n}`),
+    "requests received during this case:", ...(hits.slice(before).length ? hits.slice(before).map((h) => `  ${h}`) : ["  (none)"]));
+}
+listener.close(); stub4.close(); stub6.close();
+writeFileSync(`${OUT}/pw-origins-result.txt`, report.join("\n") + "\n");
+console.log(report.join("\n"));
+```
+
+</details>
+
 ## 5. Перевірки Claude Code (04.10.2026, Claude Code 2.1.288)
 
 Сесії `claude -p --model claude-haiku-4-5-20251001 --output-format stream-json`, у 5.1, 5.2 і 5.5 ще й `--permission-mode default`. Дозвіл на виклик дає не модель, а правила Claude Code; модель лише просить інструмент.
