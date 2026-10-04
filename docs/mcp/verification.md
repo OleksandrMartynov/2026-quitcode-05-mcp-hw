@@ -257,6 +257,51 @@ select current_user, session_user, current_setting('is_superuser');
 - У Vercel замість відсутнього `deploy_to_vercel` взяв `create_deployment`. Так виявилась дірка в
   deny, яку потім закрили глобами.
 
+## Спостереження, на які спирається threat model (Task D)
+
+Сирі витяги з журналів сесій Claude Code; нічого тут не змінює стан. Назви конекторів claude.ai, крім
+Supabase, Vercel і Gmail, ми не публікуємо — вони приховані з поміткою.
+
+**`claude -p` у корені репозиторію до будь-якого схвалення `.mcp.json`** (03.10, ще до сесії входу).
+Подія `init`, поле `mcp_servers` (версія і `name:status`):
+
+```
+2.1.278 ["supabase:needs-auth", "vercel:needs-auth", "playwright:connected", "claude.ai Vercel:needs-auth", "claude.ai Gmail:needs-auth", "claude.ai Supabase:needs-auth"]  + ще 6 конекторів claude.ai (назви не публікуємо)
+```
+
+У той самий час `claude mcp list` писав для всіх трьох: «⏸ Pending approval (run `claude` to approve)».
+Тобто інтерактивна сесія спитала б, а `claude -p` уже запустив процес `playwright` (через `npx`) і
+стукався до `supabase` і `vercel`.
+
+**Та сама команда з `ENABLE_CLAUDEAI_MCP_SERVERS=false`** (03.10, 2.1.278):
+
+```
+["supabase:needs-auth","vercel:needs-auth","playwright:connected"]
+```
+
+**`disabledMcpServers: ["claude.ai Supabase", "claude.ai Vercel"]` у `.claude/settings.json`** —
+два прогони `claude -p` поспіль (03.10). Обидва конектори на місці, тож ключ прибрали:
+
+```
+["supabase:needs-auth", "vercel:needs-auth", "playwright:connected", "claude.ai Vercel:needs-auth", "claude.ai Gmail:needs-auth", "claude.ai Supabase:needs-auth"]  + ще 6 конекторів
+["supabase:needs-auth", "vercel:needs-auth", "playwright:connected", "claude.ai Vercel:needs-auth", "claude.ai Gmail:needs-auth", "claude.ai Supabase:needs-auth"]  + ще 6 конекторів
+```
+
+**Розширення Supabase для HTTP із бази.** Сесія `claude -p` лише з `supabase` (профіль build),
+дозволено тільки `list_extensions`. Рядки результату для `pg_net` і `http`:
+
+```
+{"name": "pg_net", "schema": null, "default_version": "0.20.4", "installed_version": null, "comment": "Async HTTP"}
+{"name": "http", "schema": null, "default_version": "1.6", "installed_version": null, "comment": "HTTP client for PostgreSQL, allows web page retrieval inside the database."}
+```
+
+`installed_version: null` означає, що розширення доступні для встановлення, але не встановлені.
+
+**Сесія десктоп-застосунку Claude в корені репозиторію** (04.10, після перезапуску). У переліку
+інструментів сесії одночасно з'явились `mcp__supabase__*` (9), `mcp__playwright__*` (21) і
+`mcp__vercel__*` (126). Числа збігаються з тими, що лишаються після нашого deny. Це спостереження
+з переліку інструментів сесії; окремого файлу-артефакту немає.
+
 ## Task E (бонус)
 
 - **Варіант:** E1 — HTTP-варіант сервера із захистом Host/Origin.
