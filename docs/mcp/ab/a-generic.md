@@ -1,7 +1,7 @@
 # Транскрипт прогону A: загальний сервер (Supabase, профіль «client»)
 
-- **Сесія:** `3712197e-d8a5-4fea-9f67-836b9887316e`, 04.10.2026, 16:40–16:46 за Києвом. Claude Code
-  2.1.288, `claude-opus-5-5`, effort `high` (банер сесії: «Opus 5.5 with high effort»).
+- **Сесія:** `3712197e-d8a5-4fea-9f67-836b9887316e`, 04.10.2026, 16:40–16:46 за Києвом за журналом
+  (процес запущено раніше, до 16:39:14 — див. звіт, «Відхилення»). Claude Code 2.1.288, `claude-opus-5-5`, effort `high` (банер сесії: «Opus 5.5 with high effort»).
 - **Тека:** `../leaddesk-ab-a3`, нова й порожня, поза репозиторієм.
 - **Сервер** (скоуп `local`):
   `claude mcp add --transport http supabase "https://mcp.supabase.com/mcp?project_ref=owtlfrumfipydwpedpid&read_only=true&features=database,docs"`.

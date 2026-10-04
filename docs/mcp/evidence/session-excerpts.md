@@ -316,7 +316,7 @@ requests received during this case:
   stub :3000 got: GET /js
 ```
 
-<details><summary>Скрипт перевірки (локальний, поза репозиторієм)</summary>
+<details><summary>Скрипт перевірки (не закомічений: лежить у локальній теці, яку git ігнорує; запуск з кореня репозиторію — <code>node .ws5-local/probe-allowed-origins.mjs</code>)</summary>
 
 ```js
 // Does `--allowed-origins http://localhost:3000` (the committed playwright entry) keep the browser away
@@ -474,7 +474,7 @@ Checking MCP server health…
 leaddesk: node ~/Work/Agentic Development Course/05/mcp/leaddesk-server/src/server.mjs - ⏸ Pending approval (run `claude` to approve)
 ```
 
-**5.5. `ask` сильніший за `allow`.** За документацією Claude Code «don't ask again» у діалозі зберігає дозвіл як правило `allow`. Чи скасує воно наше `ask`? Порожня тека, те саме правило в `--settings` двічі: в `allow` і `ask` разом, потім лише в `allow`. У `claude -p` діалогу немає, тож `ask` означає «не дозволено»:
+**5.5. `ask` сильніший за `allow`.** Чи скасує правило `allow` наше `ask` для тієї самої дії? Порожня тека, те саме правило в `--settings` двічі: в `allow` і `ask` разом, потім лише в `allow`. У `claude -p` діалогу немає, тож `ask` означає «не дозволено»:
 
 ```
 == both settings={"permissions":{"allow":["Bash(touch *)"],"ask":["Bash(touch *)"]}}
@@ -520,15 +520,27 @@ M13 слухає 0.0.0.0 замість 127.0.0.1: fail=1
 M14 шлях через new URL (падав на «//»): fail=1
 ```
 
-<details><summary>Скрипт мутацій (локальний, поза репозиторієм)</summary>
+<details><summary>Скрипт мутацій (не закомічений: лежить у локальній теці, яку git ігнорує; запуск з кореня репозиторію — <code>node .ws5-local/mutate.mjs .</code>; повторний прогін 04.10 дав ті самі числа)</summary>
 
 ```js
 // Mutation check for mcp/leaddesk-server: each mutation must make `node --test` fail.
 // Every file is restored right after its run, also when a run throws.
-import { readFileSync, writeFileSync } from "node:fs";
+// Usage: node mutate.mjs <repo-root>   (e.g. `node .ws5-local/mutate.mjs .` from the repository root)
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
-const dir = new URL("../mcp/leaddesk-server/", import.meta.url);
+const root = process.argv[2];
+if (!root) {
+  console.error("usage: node mutate.mjs <repo-root>");
+  process.exit(2);
+}
+const dir = pathToFileURL(resolve(root, "mcp/leaddesk-server") + "/");
+if (!existsSync(new URL("package.json", dir))) {
+  console.error(`no mcp/leaddesk-server/package.json under ${resolve(root)}`);
+  process.exit(2);
+}
 const MUTATIONS = [
   ["email у відповіді find_leads", "src/store.mjs", "createdAt: lead.createdAt,", "createdAt: lead.createdAt, email: lead.email,"],
   ["без сортування", "src/store.mjs", ".sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id))", ".sort(() => 0)"],
