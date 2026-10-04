@@ -7,7 +7,7 @@
   `claude mcp add --transport http supabase "https://mcp.supabase.com/mcp?project_ref=owtlfrumfipydwpedpid&read_only=true&features=database,docs"`.
 - **Запуск:** `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --model claude-opus-5-5 --effort high --permission-mode default --disallowedTools "Bash,WebFetch,WebSearch"`.
 - **Режим дозволів:** `default` — у журналі сесії поле `permissionMode` має це значення в усіх записах.
-  Кожен виклик MCP пройшов через діалог, і людина натиснула «1. Yes».
+  Кожен виклик MCP-інструмента пройшов через діалог, і людина натиснула «1. Yes».
 - **`/mcp` на початку:** вхід у Supabase (OAuth), потім `1 server · Local MCPs · ✔ supabase 5 tools`
   (знімок `screens/a-00-mcp.jpg`). Команда `/mcp` і рядок «Authentication successful. Connected to
   supabase.» є і в журналі сесії, перед запитом 1.

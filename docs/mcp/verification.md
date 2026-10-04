@@ -187,6 +187,10 @@ answer: | lead_0014 | Nova Dental | facebook-ads | $2500 | 2026-07-27 |
   `claude -p` (лог білду, Playwright) ішли в режимі `default`. З 04.10 `.claude/settings.json` має
   `permissions.defaultMode: "default"`: нова сесія без прапорця стартувала в ручному режимі
   (`session-excerpts.md`, 5.7).
+- **Що з цього випливає для тексту нижче.** «Людина погодила» пишемо лише там, де це є в журналі: «так»
+  у чаті на план міграції й відповіді в `AskUserQuestion` перед деплоєм. Чи був у цих двох сесіях
+  діалог дозволу перед конкретним викликом і хто його схвалив, журнал не фіксує, тож ми цього не
+  стверджуємо.
 - **Докази.** Виклики й результати нижче — з журналів сесій; витяги з них (з редагуванням) — у
   `docs/mcp/evidence/session-excerpts.md`, розділи 1–4.
 
@@ -261,7 +265,7 @@ select current_user, session_user, current_setting('is_superuser');
   - Повторний вхід (`/mcp` → vercel → Authenticate) з доступом до команди проєкту. Після нього
     запити рівня команди більше не отримували 403.
   - Нова сесія лише з `vercel`, той самий запит; `list_teams` і `list_projects` дозволено на цю сесію
-    `--allowedTools`, як ручне схвалення в інтерактиві.
+    `--allowedTools` (у `claude -p` діалогу немає).
   - Ланцюжок: `list_teams` → `list_projects` → `list_deployments` →
     `list_deployment_events {"builds":1,"limit":-1}` → 76 подій.
   - Найновішим виявився preview з кроку вище, той самий `main` `958d2ee` (`list_deployments` у

@@ -7,8 +7,9 @@
   `claude mcp add leaddesk -- node "/Users/alexmart/Work/Agentic Development Course/05/mcp/leaddesk-server/src/server.mjs"`.
 - **Запуск:** `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --model claude-opus-5-5 --effort high --permission-mode default --disallowedTools "Bash,WebFetch,WebSearch"`.
 - **Режим дозволів:** `default` — у журналі сесії поле `permissionMode` має це значення в усіх записах.
-  Кожен виклик MCP пройшов через діалог, і людина натиснула «1. Yes». Ресурс Claude Code читає без
-  діалогу.
+  Кожен виклик MCP-інструмента пройшов через діалог, і людина натиснула «1. Yes». Виняток — читання ресурсу на
+  запиті 4: `ReadMcpResourceTool` Claude Code виконує без діалогу (знімок
+  `screens/b-q4-resource-no-dialog.jpg`).
 - **`/mcp` на початку:** `1 server · Local MCPs · ✔ leaddesk 2 tools` (знімок `screens/b-00-mcp.jpg`,
   перед запитом 1). Панель закрито без дій, тож у журнал сесії вона не потрапила.
 - **Як отримано.** Журнал сесії Claude Code (JSONL) перетворено в Markdown скриптом без змін у тексті:
