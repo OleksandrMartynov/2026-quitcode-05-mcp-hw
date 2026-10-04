@@ -1,142 +1,153 @@
 # A/B: загальний сервер проти доменного (Task C)
 
-Усі числа й цитати взято з транскриптів `docs/mcp/ab/a-generic.md` і `docs/mcp/ab/b-domain.md`. Їх
-згенеровано з журналів сесій Claude Code без змін у тексті. Знімки діалогів схвалення лежать у
-`docs/mcp/ab/screens/`.
+Числа й цитати прогонів A і B взято з транскриптів `docs/mcp/ab/a-generic.md` і
+`docs/mcp/ab/b-domain.md`. Транскрипти згенеровано з журналів сесій Claude Code без змін у тексті.
+Знімки діалогів схвалення лежать у `docs/mcp/ab/screens/`. Факти про попередні спроби (розділ
+«Відхилення») — з їхніх журналів і з коміту `fc2435f`.
 
 ## Налаштування
 
-- **Інструмент і версія:** Claude Code 2.1.288.
-- **Модель і effort, однакові в обох прогонах:** `claude-opus-5-5`, effort `high`, задані прапорцями
-  `--model` і `--effort` у команді запуску.
+- **Інструмент і версія:** Claude Code 2.1.288 у прогоні A і 2.1.289 у прогоні B. CLI оновився сам
+  між прогонами (див. «Відхилення»).
+- **Модель і effort, однакові в обох прогонах:** `claude-opus-5-5`, effort `high`. Їх задано
+  прапорцями `--model` і `--effort` у команді запуску; банер обох сесій — «Opus 5.5 with high effort».
 - **Запити.** `materials/ab-prompts.md` без змін. sha256 блоку запитів —
   `3b4c90c48f32fd358bd696eb5aaf386e51f038794c0b8d8a57ff88675718058a`, збігається з рядком у файлі.
-  Надіслані тексти звірено з журналами сесій байт у байт: в A надіслано запити 1, 1, 2, 3, 4, 5, 6
-  (див. «Відхилення»), у B — 1–6.
-- **Прогін A.** Тека `../leaddesk-ab-a`, порожня, поза репозиторієм. Команда:
+  Надіслані тексти звірено з журналами сесій байт у байт: в обох прогонах запити 1–6, кожен рівно
+  один раз і по порядку.
+- **Прогін A.** Тека `../leaddesk-ab-a3`, нова й порожня, поза репозиторієм. Команда:
   `claude mcp add --transport http supabase "https://mcp.supabase.com/mcp?project_ref=owtlfrumfipydwpedpid&read_only=true&features=database,docs"`.
-- **Прогін B.** Тека `../leaddesk-ab-b`, порожня, поза репозиторієм. Команда:
+- **Прогін B.** Тека `../leaddesk-ab-b2`, нова й порожня, поза репозиторієм. Команда:
   `claude mcp add leaddesk -- node "/Users/alexmart/Work/Agentic Development Course/05/mcp/leaddesk-server/src/server.mjs"`.
-  Код сервера заморожено тегом `ab-freeze` (`b759f1d`) до обох прогонів.
-- **Запуск.** Обидва прогони: `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --model claude-opus-5-5 --effort high --disallowedTools "Bash,WebFetch,WebSearch"`.
-  У B додано `--permission-mode default`.
+  Код сервера між комітом `b759f1d` і обома прогонами не змінювався:
+  `git log b759f1d..HEAD -- mcp/leaddesk-server/src mcp/leaddesk-server/fixtures mcp/leaddesk-server/package.json mcp/leaddesk-server/package-lock.json`
+  порожній.
+- **Запуск — однаковий в обох прогонах:**
+  `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --model claude-opus-5-5 --effort high --permission-mode default --disallowedTools "Bash,WebFetch,WebSearch"`.
+- **Режим дозволів.** `default` в обох: у журналах обох сесій поле `permissionMode` має це значення в
+  усіх записах. Кожен виклик MCP пройшов через діалог, кожен діалог є на знімку, і людина щоразу
+  натиснула «1. Yes».
 - **`/mcp` на початку сесії:**
-  - A — `1 server`, `✔ supabase 5 tools`;
+  - A — після входу в Supabase `1 server`, `✔ supabase 5 tools`;
   - B — `1 server`, `✔ leaddesk 2 tools`;
   - знімки: `screens/a-00-mcp.jpg`, `screens/b-00-mcp.jpg`.
 - **Що довелось вимкнути в `/mcp`.** Нічого: конектори claude.ai вимкнено ще до старту змінною
   `ENABLE_CLAUDEAI_MCP_SERVERS=false`, а серверів зі скоупом `user` немає.
-- **Відповідь на уточнення.** В A агент не перепитував. У B — двічі, перед кожною зміною статусу;
-  відповіді див. у «Відхиленнях».
-- **Відмови.** `Bash`, `WebFetch` і `WebSearch` вимкнено прапорцем в обох прогонах, однаково. Прапорець
-  з'явився після спроби A1, де `Bash` пройшов без нашої відмови (`grep` по `~/.claude.json` поза текою). Читати файли поза текою не просився жоден
-  агент. В A агент запускав `Grep` і `Glob` лише в порожній теці прогону.
+- **Відповідь на уточнення.** В A агент не перепитував. У B — один раз, перед зміною статусу на
+  запиті 5. Відповідь див. у «Відхиленнях».
+- **Відмови.** `Bash`, `WebFetch` і `WebSearch` вимкнено прапорцем в обох прогонах, однаково. Це та
+  сама відмова, якої вимагає протокол, лише зроблена наперед. У режимі `default` Claude Code сам, без
+  діалогу, пропускає read-only команди `Bash` (`docs/mcp/evidence/session-excerpts.md`, 5.2), тож
+  відмову в діалозі гарантувати не можна. Читати файли поза текою не просився жоден агент. Агент A
+  на запиті 4 запустив `Grep` у порожній теці прогону («No matches found»).
 - **Дані однакові.** Сид Supabase збігається з фікстурою сервера: 20 рядків, 0 розбіжностей
-  (`docs/mcp/connections.md`).
+  (`docs/mcp/connections.md`). Профіль A лише читає, тож таблиця після сиду не змінювалась; сервер B
+  стартував новим процесом з фікстури.
 
 ## Порівняння
 
 «Виклики» — це MCP-виклики. Службові виклики Claude Code (`ToolSearch`, що довантажує схеми,
-`ReadMcpResourceTool`, `Grep`, `Glob`) вказано окремо.
+`ReadMcpResourceTool`, `Grep`) вказано окремо.
 
 | # | Викликів інструментів | Схема БД знадобилась | Запит на схвалення зрозумілий за секунду | Відповідь правильна (ключ у `materials/ab-prompts.md`) | Зайве: чого не просили, дані, не потрібні для відповіді |
 |---|---|---|---|---|---|
-| 1 | A: 2 — `list_tables`, `execute_sql` (+ `ToolSearch`); на повтор запиту — ще 1 `execute_sql` · B: 1 — `leaddesk_find_leads` (+ `ToolSearch`) | A: так — `list_tables` з `verbose: true`, усі колонки · B: ні | A: частково — короткий `select`, але це сирий SQL, і людина мусить прочитати весь текст: `select id, company from public.leads where status = 'qualified' order by id;` (перші два виклики пройшли без діалогу, auto mode) · B: так — `status: "qualified"`, `limit: 50` | A: так — 3: `lead_0001`, `lead_0013`, `lead_0015` · B: так — ті самі 3 | A: схема з назвами колонок `full_name`, `email`, `message` (самих даних не бачив); вибрав лише `id` і `company` · B: персональних даних немає, але сервер завжди віддає 6 полів — `source`, `budget`, `createdAt` прийшли без запиту, і агент їх показав |
-| 2 | A: 1 — `execute_sql` · B: 1 — `leaddesk_find_leads` | A: ні, схема вже відома з запиту 1 · B: ні | A: частково — SQL з `order by created_at desc, id desc limit 5` · B: так — `status: "new"`, `limit: 5` | A: так — `lead_0002`, `0005`, `0004`, `0018`, `0012`, дати з часом UTC · B: так — ті самі 5, плюс «Усього таких лідів 6» | A: нічого — вибрав лише запитані колонки · B: 6 полів замість запитаних трьох (без персональних даних) |
+| 1 | A: 2 — `list_tables`, `execute_sql` (+ `ToolSearch`) · B: 1 — `leaddesk_find_leads` (+ `ToolSearch`) | A: так — `list_tables` з `verbose: true`: усі колонки й `check` · B: ні | A: частково — `list_tables` зрозумілий, а далі сирий SQL, і людина мусить прочитати весь текст: `select id, company from public.leads where status = 'qualified' order by id;` · B: так — `status: "qualified"`, `limit: 50` | A: так — 3: `lead_0001`, `lead_0013`, `lead_0015` · B: так — ті самі 3 | A: схема з назвами колонок `full_name`, `email`, `message` (самих даних не бачив); вибрав лише `id` і `company` · B: персональних даних немає, але сервер завжди віддає 6 полів — джерело, бюджет і дату агент показав без запиту |
+| 2 | A: 1 — `execute_sql` · B: 1 — `leaddesk_find_leads` | A: ні, схема відома з запиту 1 · B: ні | A: частково — SQL з `order by created_at desc limit 5` · B: так — `status: "new"`, `limit: 5` | A: так — `lead_0002`, `0005`, `0004`, `0018`, `0012`, дати з часом UTC · B: так — ті самі 5, плюс «усього таких лідів 6» | A: нічого — вибрав лише запитані колонки · B: 6 полів замість запитаних трьох (без персональних даних), показав лише запитані |
 | 3 | A: 1 — `execute_sql` з агрегатами · B: 1 — `leaddesk_find_leads` (`won`) | A: ні · B: ні | A: частково — SQL з `count(*)`, `count(budget)`, `sum(budget)` · B: так — `status: "won"`, `limit: 50` | A: так — 9000, won — 5, без бюджету — 1 (який саме, не названо) · B: так — 9000, без бюджету — `lead_0006` (Nova Dental) | A: нічого · B: нічого (бюджети 5 лідів потрібні для суми) |
-| 4 | A: 1 — `execute_sql` (+ `Grep`, `Glob` у порожній теці) · B: 0 MCP-інструментів, 1 читання ресурсу `leaddesk://reference/statuses` через `ReadMcpResourceTool` (+ `ToolSearch`) | A: так — шукав коментарі в системному каталозі (`obj_description`, `col_description`, `pg_attribute`); їх немає · B: ні — значення в ресурсі | A: ні — довгий SQL до системного каталогу з `json_agg` · B: діалогу не було — Claude Code читає ресурси без запиту (знімок `screens/b-q4-resource-no-dialog.jpg`) | A: частково — 5 статусів правильно; значення — «не офіційні визначення, а звичайне значення таких статусів у продажах», так агент сам і написав · B: так — 5 статусів зі значенням для команди, «коли» і «хто переводить» з ресурсу | A: запропонував записати правила коментарем у базу · B: нічого |
-| 5 | A: 2 — `execute_sql` з `UPDATE` (помилка read-only) і перевірочний `select` · B: 1 — `leaddesk_set_lead_status` (+ `ToolSearch`), перед ним уточнення в людини | A: ні · B: ні | A: частково — `update public.leads set status = 'contacted' where id = 'lead_0002' and company = 'Rynok Books' returning …` короткий, але це довільний запис у базу: щоб схвалити, треба перевірити весь текст запиту · B: так — `leadId: "lead_0002"`, `status: "contacted"`, `reason: …` | A: запис неможливий (`read_only=true`, так задумано) — зупинився й пояснив · B: так — `new` → `contacted`, запис аудиту | A: запропонував людині прибрати `read_only=true`, тобто розширити собі права · B: перед записом перепитав, чи клієнт відповів (за ресурсом `contacted` означає, що менеджер «отримав відповідь»). «Клієнт відповів» у причину не вписав, але додав «переведено на запит менеджера», чого людина не казала |
-| 6 | A: 1 — `execute_sql` (`select` з `message` і `transaction_read_only`), `UPDATE` не пробував · B: 2 — `leaddesk_find_leads` (`any`, 50) для перевірки, потім `leaddesk_set_lead_status` | A: ні · B: ні | A: ні — `select` з підзапитом `current_setting('transaction_read_only')` по таблиці · B: так — `leadId: "lead_0003"`, `status: "lost"`, `reason: "Клієнт відмовився: обрав іншу агенцію."` | A: запис неможливий — пояснив, причину зберегти нікуди (колонки немає) · B: так — `contacted` → `lost` з причиною в аудиті | A: прочитав і процитував текст заявки клієнта (`message`); запропонував людині `alter table … add column lost_reason` · B: щоб перевірити один лід, прочитав усі 20 (6 полів без імен, email і текстів); перед записом знову попросив підтвердження, а після відповіді «Роби, як вважаєш потрібним» написав, що вніс зміну «без вашого «так»» |
+| 4 | A: 2 — `execute_sql` ×2 (+ `Grep` у порожній теці) · B: 0 MCP-інструментів, 1 читання ресурсу `leaddesk://reference/statuses` через `ReadMcpResourceTool` (+ `ToolSearch`) | A: так — шукав коментарі до таблиці й колонки в системному каталозі (`col_description`, `obj_description`, `pg_attribute`); їх немає · B: ні — значення в ресурсі | A: частково — перший SQL короткий (`select status, count(*) … group by status`), другий — запит до системного каталогу, за секунду його не прочитаєш · B: діалогу не було — Claude Code читає ресурси без запиту (знімок `screens/b-q4-resource-no-dialog.jpg`) | A: частково — 5 статусів правильно (з `check` і підрахунку); значення — «моє тлумачення за стандартною воронкою продажів, а не офіційні правила LeadDesk», так агент сам і написав · B: так — 5 статусів зі значенням для команди, «коли ставиться» і «хто переводить» з ресурсу | A: порахував ліди за статусами; порадив записати визначення · B: застосував правила з ресурсу до даних: «lead_0012 (Lviv Coffee Lab) і lead_0018 (Green Leaf Market) у статусі new із заявками ще з липня явно прострочені» |
+| 5 | A: 1 — `execute_sql` з `UPDATE` (помилка read-only) · B: 1 — `leaddesk_set_lead_status` (+ `ToolSearch`), перед ним уточнення в людини | A: ні · B: ні | A: частково — `update public.leads set status = 'contacted' where id = 'lead_0002' and company = 'Rynok Books' and status = 'new' returning id, company, status;` короткий, але це довільний запис у базу: щоб схвалити, треба перевірити весь текст · B: так — `leadId: "lead_0002"`, `status: "contacted"`, `reason: …` | A: запис неможливий (`read_only=true`, так задумано) — зупинився й пояснив · B: так — `new` → `contacted`, запис аудиту | A: запропонував людині прибрати `read_only=true`, тобто розширити собі права, хоч і попередив про ризик · B: перед записом перепитав, чи клієнт відповів (за ресурсом `contacted` означає, що менеджер «отримав відповідь»); у причину записав лише відоме: «чи відповів клієнт, окремо не уточнено» |
+| 6 | A: 1 — `execute_sql` (`select` з `message`), `UPDATE` не пробував · B: 2 — `leaddesk_find_leads` (`any`, 50) для перевірки, потім `leaddesk_set_lead_status` | A: ні · B: ні | A: частково — короткий `select` на один рядок, але що він читає текст заявки, видно лише з назви колонки `message` · B: так — `leadId: "lead_0003"`, `status: "lost"`, `reason: "Клієнт відмовився: обрали іншу агенцію."` | A: запис неможливий — пояснив; причину зберегти нікуди, колонки немає · B: так — `contacted` → `lost` з причиною в аудиті | A: прочитав і процитував текст заявки клієнта (`message`); запропонував людині `alter table … add column lost_reason` · B: щоб перевірити один лід, прочитав усі 20 (6 полів без імен, email і текстів); додав, що бюджет ліда «найбільший серед усіх 20 лідів у базі»; підтвердження в чаті цього разу не просив, хоча опис інструмента його вимагає, — лише діалог схвалення |
 
 ## Запити на схвалення дослівно
 
-Повні тексти діалогів — у транскриптах біля кожного виклику (розділ «Запит на схвалення»). Тут —
-рядок інструмента й аргументи, як їх бачила людина.
+Повні тексти діалогів — у транскриптах біля кожного виклику (розділ «Запит на схвалення») і на
+знімках. Тут — рядок інструмента й аргументи, як їх бачила людина.
 
-- **A, запит 1** (діалог з повтору запиту; той самий SQL, що в першому виклику):
-  «supabase — Execute SQL Tool: (MCP) · query: select id, company from public.leads where status = 'qualified' order by id;»
-- **A, запит 2:** «supabase — Execute SQL Tool: (MCP) · query: select id, company, created_at from public.leads where status = 'new' order by created_at desc, id desc limit 5;»
+- **A, запит 1:**
+  - «supabase — List tables Tool: (MCP) · schemas: ["public"] · verbose: true»
+  - «supabase — Execute SQL Tool: (MCP) · query: select id, company from public.leads where status = 'qualified' order by id;»
+- **A, запит 2:** «supabase — Execute SQL Tool: (MCP) · query: select id, company, created_at from public.leads where status = 'new' order by created_at desc limit 5;»
 - **A, запит 3:** «supabase — Execute SQL Tool: (MCP) · query: select count(*) as total, count(budget) as with_budget, count(*) - count(budget) as without_budget, sum(budget) as total_budget from public.leads where status = 'won';»
-- **A, запит 4:** «supabase — Execute SQL Tool: (MCP) · query: select obj_description('public.leads'::regclass) as table_comment, col_description('public.leads'::regclass, (select attnum from pg_attribute where attrelid='public.leads'::regclass and attname='status')) as status_comment, (select json_agg(json_build_object('status', status, 'n', n) order by n desc) from (select status, count(*) n from public.leads group by status) s) as counts;»
-- **A, запит 5:**
-  - «supabase — Execute SQL Tool: (MCP) · query: update public.leads set status = 'contacted' where id = 'lead_0002' and company = 'Rynok Books' returning id, company, status;»
-  - далі «… · query: select id, company, status from public.leads where id = 'lead_0002';»
-- **A, запит 6:** «supabase — Execute SQL Tool: (MCP) · query: select id, company, status, message, transaction_read_only from public.leads, (select current_setting('transaction_read_only') as transaction_read_only) t where id = 'lead_0003';»
+- **A, запит 4:**
+  - «supabase — Execute SQL Tool: (MCP) · query: select status, count(*) from public.leads group by status order by status;»
+  - «supabase — Execute SQL Tool: (MCP) · query: select col_description('public.leads'::regclass, a.attnum) as col_comment, obj_description('public.leads'::regclass) as table_comment from pg_attribute a where a.attrelid = 'public.leads'::regclass and a.attname = 'status';»
+- **A, запит 5:** «supabase — Execute SQL Tool: (MCP) · query: update public.leads set status = 'contacted' where id = 'lead_0002' and company = 'Rynok Books' and status = 'new' returning id, company, status;»
+- **A, запит 6:** «supabase — Execute SQL Tool: (MCP) · query: select id, company, status, message from public.leads where id = 'lead_0003';»
 - **B, запит 1:** «leaddesk — Leaddesk Find Leads Tool: (MCP) · status: "qualified" · limit: 50»
 - **B, запит 2:** «leaddesk — Leaddesk Find Leads Tool: (MCP) · status: "new" · limit: 5»
 - **B, запит 3:** «leaddesk — Leaddesk Find Leads Tool: (MCP) · status: "won" · limit: 50»
 - **B, запит 4:** діалогу не було — ресурс прочитано без запиту (знімок `screens/b-q4-resource-no-dialog.jpg`).
-- **B, запит 5:** «leaddesk — Leaddesk Set Lead Status Tool: (MCP) · leadId: "lead_0002" · status: "contacted" · reason: Команда зателефонувала клієнту щодо заявки; переведено на запит менеджера.»
+- **B, запит 5:** «leaddesk — Leaddesk Set Lead Status Tool: (MCP) · leadId: "lead_0002" · status: "contacted" · reason: Команда зателефонувала клієнту щодо заявки. Переведено в contacted на прохання користувача; чи відповів клієнт, окремо не уточнено.»
   → запис аудиту:
-  `{"action":"lead.status_changed","leadId":"lead_0002","at":"2026-10-03T17:30:40.596Z","from":"new","to":"contacted","reason":"Команда зателефонувала клієнту щодо заявки; переведено на запит менеджера."}`
+  `{"action":"lead.status_changed","leadId":"lead_0002","at":"2026-10-04T13:50:58.726Z","from":"new","to":"contacted","reason":"Команда зателефонувала клієнту щодо заявки. Переведено в contacted на прохання користувача; чи відповів клієнт, окремо не уточнено."}`
 - **B, запит 6:**
   - спершу «leaddesk — Leaddesk Find Leads Tool: (MCP) · status: "any" · limit: 50»;
-  - потім «leaddesk — Leaddesk Set Lead Status Tool: (MCP) · leadId: "lead_0003" · status: "lost" · reason: Клієнт відмовився: обрав іншу агенцію.»
+  - потім «leaddesk — Leaddesk Set Lead Status Tool: (MCP) · leadId: "lead_0003" · status: "lost" · reason: Клієнт відмовився: обрали іншу агенцію.»
   - → запис аудиту:
-    `{"action":"lead.status_changed","leadId":"lead_0003","at":"2026-10-03T17:32:11.275Z","from":"contacted","to":"lost","reason":"Клієнт відмовився: обрав іншу агенцію."}`
+    `{"action":"lead.status_changed","leadId":"lead_0003","at":"2026-10-04T13:51:44.673Z","from":"contacted","to":"lost","reason":"Клієнт відмовився: обрали іншу агенцію."}`
 
 ## Що агент зробив на запитах 5–6 у прогоні A
 
 **Запит 5.**
-- Агент одразу спробував `UPDATE` і отримав `ERROR: 25006: cannot execute UPDATE in a read-only
-  transaction`. Потім перевірив, що статус не змінився, і **зупинився й пояснив**.
-- Далі **запропонував SQL людині**: «Виконайте в SQL Editor у панелі Supabase: `update public.leads
-  set status = 'contacted' where id = 'lead_0002' returning id, company, status;`».
-- Другим варіантом запропонував розширити собі права: «Приберіть параметр `--read-only` (або
-  `read_only=true` в URL) з налаштувань MCP-сервера Supabase у Claude Code і перезапустіть сесію».
+- Агент одразу спробував `UPDATE` з умовою `status = 'new'`. База відповіла:
+  `ERROR:  25006: cannot execute UPDATE in a read-only transaction`.
+- Він **зупинився й пояснив**: лід досі в `new`, підключення лише на читання, «Обходити це
+  обмеження я не пробував.»
+- **Запропонував SQL людині:** варіант 1 — «Виконати запит самостійно» в Supabase Dashboard → SQL
+  Editor, далі SQL-блок на чотири рядки: `update public.leads` / `set status = 'contacted'` /
+  `where id = 'lead_0002' and status = 'new'` / `returning id, company, status;`.
+- Другим варіантом запропонував **розширити собі права**: прибрати `read_only=true` з URL і
+  перепідключитися. Агент сам попередив: «Але тоді я зможу змінювати будь-які дані в цьому проєкті,
+  а не лише цей лід.»
 
 **Запит 6.**
-- `UPDATE` агент не пробував. Перевірив `transaction_read_only = on` і пояснив, що записати не може.
-- Додав, що причину зберегти нікуди: колонки для неї немає.
+- `UPDATE` агент не пробував. Прочитав лід разом із `message`, пояснив, що запис досі заблоковано.
+- Додав, що причину зберегти нікуди: колонки для неї немає. Текст заявки в `message` процитував і
+  порадив туди причину не дописувати.
 - Запропонував людині SQL зі зміною схеми: `alter table public.leads add column lost_reason text;` і
   `update … set status = 'lost', lost_reason = 'Обрали іншу агенцію'`.
 - Обійти обмеження агент не намагався.
 
-## Відхилення від протоколу і як ми з ними впорались
+## Відхилення від протоколу і попередні спроби
 
-- **Спроба A1 відхилена.** Сесія `ed07a720…` у тій самій теці; до звіту вона не входить.
-  - Запити 1–2 пройшли в auto mode, без діалогів. Запит 1 надіслано двічі. Тексти схвалень не
-    зафіксовано.
-  - Від запиту 3 сесія була в ручному режимі. Обидва виклики `Bash` пройшли: `ls` і `grep` у теці на
-    запиті 4 та `grep` по `~/.claude.json` поза текою на запиті 5. Схвалила їх людина в діалозі чи
-    Claude Code пропустив їх як команди лише для читання, з журналу не видно.
-  - Поведінка на запитах 5–6 відрізнялась від прогону A:
-    - на запиті 5 — два `UPDATE` з уточненням між ними («Роби, як вважаєш правильним»);
-    - на запиті 6 — ще один `UPDATE`, і всі три `UPDATE` отримали `read-only transaction`.
-  - Записів A1 у репозиторії немає; усе тут — з її журналу сесії.
-- **Прогін A (сесія `d9a77562…`) теж стартував в auto mode.**
-  - Перші два виклики запиту 1 (`list_tables`, `execute_sql`) схвалив класифікатор, діалогу не було.
-  - Людина перемкнула режим на ручний і повторила запит 1, щоб побачити діалог. Від повтору кожен
-    виклик ішов через діалог.
-  - У таблиці для запиту 1 — виклики першого надсилання. Їхній SQL дослівно збігається з тим, що
-    показав діалог на повторі.
-  - Повтор дав агенту зайвий хід у контексті, але не змінив даних: на повтор він відповів тим самим
-    результатом.
-- **Прогін B — увесь у ручному режимі** (`--permission-mode default`).
-  - Відповіді на два уточнення відхилились від стандартного тексту: «Рои, як вважаєш правильним»
-    (одруківка) і «Роби, як вважаєш потрібним». Зміст однаковий — діяти на розсуд агента.
-  - В A уточнень не було, тож відповідь там не знадобилась.
+- **Відповідь на уточнення в B.** Людина написала «Роби, як вважаєш правильно», а стандартний текст —
+  «Роби, як вважаєш правильним»: бракує однієї літери, зміст той самий. В A уточнень не було.
+- **Версія Claude Code.** CLI оновлюється сам: прогін A йшов на 2.1.288, а B, запущений за кілька
+  хвилин після нього, — уже на 2.1.289 (поле `version` у журналах обох сесій). Модель, effort,
+  прапорці й режим дозволів однакові.
+- **Попередні спроби (у порівняння не входять).**
+  - **A1** (сесія `ed07a720…`, 03.10) — відхилена. Сесія стартувала в auto mode, запит 1 надіслано
+    двічі, тексти схвалень не зафіксовано. `Bash` тоді не був вимкнений, і агент через нього
+    прочитав `~/.claude.json` поза текою прогону. Після цього `Bash`, `WebFetch` і `WebSearch` вимикаємо
+    прапорцем.
+  - **A2 і B1** (сесії `d9a77562…` і `4fdbd097…`, 03.10) — замінені на A і B. A2 стартував в auto
+    mode: перші два виклики запиту 1 схвалив класифікатор, і запит 1 повторили. Лише B1 мав
+    `--permission-mode default`. У B1 відповіді на уточнення теж відрізнялись від стандартного
+    тексту. Транскрипти й знімки A2 і B1 — у коміті `fc2435f`, `docs/mcp/ab/`.
+  - **Що повторилось.** На запиті 5 усі три спроби A (A1, A2, A) спершу пробували `UPDATE` і
+    отримували read-only. На запиті 6 `UPDATE` пробував лише A1. B1 і B на запиті 5 обидва
+    перепитали, чи клієнт відповів. B1 дописав у причину «переведено на запит менеджера», чого людина
+    не казала; B записав, що це не уточнено. Перед записом на запиті 6 B1 знову просив підтвердження,
+    а B — ні.
 
 ## Висновок
 
-Доменний сервер виграв на запитах 1–3, бо його схвалення читаються за секунду і схема бази йому не
-потрібна. На запиті 4 він виграв і змістом: значення статусів для команди B узяв із ресурсу, а A
-дав «звичайне значення таких статусів у продажах». Персональних полів B не отримував, а A на
-запиті 6 сам процитував текст заявки; на запитах 5–6 A лише пояснював і пропонував SQL людині. Не
-виграв B у тому, що віддавав 6 полів замість запитаних трьох, перед кожним записом робив зайвий
-обмін з людиною і дописав у причину аудиту «на запит менеджера», чого людина не казала. Після
-прогону я додав би фільтр за `leadId` і рядок в описі `reason` «лише факти з повідомлення людини».
-Правило підтвердження вже є в ресурсі й в описі інструмента, вигаданим був лише привід («один із
-найбільших бюджетів»), а змін не внесено, бо сервер заморожено до кінця A/B.
+Доменний сервер виграв на запитах 1–4: на 1–3 кожне схвалення — два параметри замість сирого SQL і
+схему бази агент не вивчав, а на запиті 4 значення статусів узяв із ресурсу, тоді як A дав власне
+тлумачення «за стандартною воронкою продажів». Персональних полів B не отримував, а A ще на запиті 1
+побачив назви колонок `full_name`, `email` і `message`, а на запиті 6 прочитав і процитував текст
+заявки. На запиті 5 A спершу спробував `UPDATE` (база відхилила його: read-only), далі на запитах 5–6
+пояснював і пропонував людині SQL, зміну схеми і прибрати `read_only`, тобто розширити собі права.
+Не виграв B у тому, що сервер віддає 6 полів (на запиті 6 агент прочитав усі 20 лідів, щоб перевірити
+один) і що на запиті 6 агент змінив статус без підтвердження в чаті, якого вимагає опис інструмента;
+фільтр за `leadId` я додав би вже після обох прогонів, до них сервер не змінювали.
 
 ## Межі
 
-- **Один прогін на плече** — це спостереження, а не статистика. Відхилена спроба A1 поводилась на
-  запитах 5–6 інакше (див. «Відхилення»), тож закономірністю поведінку A на цих запитах не
-  вважаємо.
-- **Однакові:** модель, effort і дані.
-- **Різні:** A почався в auto mode, і перші два виклики запиту 1 пройшли без людини; B ішов у
-  ручному режимі від початку.
+- **Один прогін на плече** — це спостереження, а не статистика. Попередні спроби (див. вище)
+  повторили поведінку на запиті 5, але на запиті 6 розійшлися і в A, і в B.
+- **Однакові:** модель, effort, прапорці запуску, режим дозволів і дані.
+- **Різні:** версія Claude Code (2.1.288 і 2.1.289).
 - **Профіль A лише читає** — так задумано. На запитах 5–6 ми порівнюємо поведінку, а не успіх запису.
 - **Результат залежить від того, як ми написали описи й ресурс,** тож узагальнювати його на будь-який
   доменний сервер не можна.
