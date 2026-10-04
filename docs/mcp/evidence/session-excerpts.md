@@ -285,7 +285,7 @@ tool_result (is_error: true): This command requires approval
 permission_denials: [{"tool_name":"Bash","command":"vercel whoami"}]
 ```
 
-**5.2. Read-only `Bash` у режимі `default` іде без діалогу.** Порожня тека; тому в A/B `Bash` вимкнено прапорцем, а не відмовою в діалозі:
+**5.2. Read-only `Bash` у режимі `default` іде без діалогу.** Тека без правил проєкту (у ній лише файл виводу цієї ж сесії); тому в A/B `Bash` вимкнено прапорцем, а не відмовою в діалозі:
 
 ```
 init: Claude Code 2.1.288, permissionMode default, mcp_servers []
