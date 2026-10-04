@@ -489,6 +489,22 @@ permission_denials: []
 probe.txt created
 ```
 
+**5.6. Свіжий клон: закомічений `disabledMcpjsonServers` і профіль на один сервер.** `git clone` репозиторію в тимчасову теку (без `.claude/settings.local.json`), `ENABLE_CLAUDEAI_MCP_SERVERS=false`; у другому `claude -p` — `--disallowedTools mcp__playwright`, тож модель інструментів не бачить:
+
+```
+$ git log --oneline -1
+6c650d1 config: project servers off by default; one-server profiles
+$ ls .claude
+settings.json
+skills
+$ claude mcp list
+No MCP servers configured. Use `claude mcp add` to add a server.
+$ claude -p … → init.mcp_servers
+  Claude Code 2.1.289 mcp_servers []
+$ claude -p … --strict-mcp-config --mcp-config docs/mcp/profiles/playwright.json → init.mcp_servers
+  Claude Code 2.1.289 mcp_servers [{"name":"playwright","status":"connected","source":"dynamic"}]
+```
+
 ## 6. Task A: коди виходу Inspector, мутації, пастка E1
 
 **Коди виходу чотирьох команд Inspector** (`verification.md`, Task A) і stderr команди з поганим входом — вивід скрипта, що запускав ці команди:

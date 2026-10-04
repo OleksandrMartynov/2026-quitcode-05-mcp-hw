@@ -63,6 +63,19 @@
 були всі три сервери разом, але агенту нічого не писали (`/exit` одразу після входу). Основна робоча
 сесія правило порушувала до 04.10 — див. останній рядок таблиці.
 
+**Як правило закріплено в репозиторії (з 04.10).** `.claude/settings.json` вимикає автозапуск усіх
+трьох серверів з `.mcp.json` (`disabledMcpjsonServers`), а кожен крок вмикає рівно один сервер
+профілем — точною копією його запису з `.mcp.json`:
+
+```bash
+ENABLE_CLAUDEAI_MCP_SERVERS=false claude --permission-mode default --strict-mcp-config --mcp-config docs/mcp/profiles/supabase.json
+```
+
+(так само `vercel.json` і `playwright.json`). Перевірено у свіжому клоні: без профілю `claude mcp list`
+пише «No MCP servers configured», а `claude -p` має `mcp_servers: []`; з профілем `playwright.json` —
+лише `playwright: connected` (`evidence/session-excerpts.md`, 5.6). Кроки нижче йшли ще з локальними
+копіями цих профілів.
+
 | Крок | Увімкнено в сесії | Сервер із правом запису в цій сесії |
 |---|---|---|
 | Вхід (OAuth) | `supabase`, `vercel`, `playwright` (схвалення `.mcp.json`, walkthrough, крок 2; `/exit` одразу після входу); агенту нічого не писали | — (агенту нічого не писали; формально `supabase` і `vercel` мають право запису) |
@@ -70,7 +83,7 @@
 | Лог білду | лише `vercel` (`--strict-mcp-config`; перша сесія — інтерактивна в режимі auto, лог — `claude -p` у режимі `default`) | `vercel`: у першій сесії `create_deployment` ще не був під deny і створив preview (див. verification.md). Лог цього preview — у `evidence/vercel-build-log-preview.txt`; основний `evidence/vercel-build-log.txt` — лог production-деплою з git-інтеграції (`claude -p`, лише читання, 04.10). Preview людина вирішила лишити: у проєкті `ssoProtection` (`all_except_custom_domains`), тож без входу у Vercel він не відкривається. Після звуження записуючих інструментів немає |
 | Перевірка форми й знімки «до/після» | лише `playwright` (`claude -p --strict-mcp-config`) | `playwright` (браузер) |
 | A/B (Task C) | A — лише `supabase` з `read_only=true`; B — лише `leaddesk` | A — жоден; B — `leaddesk` |
-| Основна робоча сесія (десктоп-застосунок Claude, корінь репозиторію; режим auto) | **До 04.10:** `supabase`, `vercel`, `playwright` разом — схвалення з кроку входу записалось у `.claude/settings.local.json` як `enabledMcpjsonServers`; плюс браузерні інструменти самого застосунку. Жодного виклику цих серверів у сесії не було: скрипт перевірив журнали сесії і всіх її субагентів (`verification.md`, «Спостереження…»). **З 04.10:** `disabledMcpjsonServers` з усіма трьома (той самий файл, у `.gitignore`); сесія від'єднала всі три, `claude -p` у корені — `mcp_servers: []` (`session-excerpts.md`, 5.3) | до 04.10 — `supabase` і `vercel` разом із браузером, тобто порушення правила вище (див. `threat-model.md`); з 04.10 — жоден |
+| Основна робоча сесія (десктоп-застосунок Claude, корінь репозиторію; режим auto) | **До 04.10:** `supabase`, `vercel`, `playwright` разом — схвалення з кроку входу записалось у `.claude/settings.local.json` як `enabledMcpjsonServers`; плюс браузерні інструменти самого застосунку. Жодного виклику цих серверів у сесії не було: скрипт перевірив журнали сесії і всіх її субагентів (`verification.md`, «Спостереження…»). **З 04.10:** `disabledMcpjsonServers` з усіма трьома — спершу в `.claude/settings.local.json` (сесія від'єднала всі три, `claude -p` у корені — `mcp_servers: []`, `session-excerpts.md`, 5.3), потім і в закоміченому `.claude/settings.json` | до 04.10 — `supabase` і `vercel` разом із браузером, тобто порушення правила вище (див. `threat-model.md`); з 04.10 — жоден |
 
 ## До і після звуження: третій сервер
 

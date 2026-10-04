@@ -174,6 +174,9 @@ answer: | lead_0014 | Nova Dental | facebook-ads | $2500 | 2026-07-27 |
 - **Конфіг.**
   - `.mcp.json` записано трьома командами `claude mcp add --scope project` з walkthrough.
   - Права — у `.claude/settings.json`. Як звужено кожен сервер — у `docs/mcp/connections.md`.
+  - З 04.10 `.claude/settings.json` ще й вимикає автозапуск усіх трьох серверів
+    (`disabledMcpjsonServers`); кожен крок вмикає один сервер профілем з `docs/mcp/profiles/`
+    (`--strict-mcp-config --mcp-config`). Перевірено у свіжому клоні (`session-excerpts.md`, 5.6).
 - **Сесії.** Claude Code 2.1.288, `claude-opus-5-5`. У кожній сесії рівно один сервер:
   `--strict-mcp-config` з одним записом із `.mcp.json` плюс `ENABLE_CLAUDEAI_MCP_SERVERS=false`.
 - **Режим дозволів.** Інтерактивні сесії Supabase і Vercel ми запускали без `--permission-mode`, а
@@ -351,6 +354,10 @@ approval (run `claude` to approve)», а `claude -p` у тій самій тец
   планувальник).
   `claude -p` у корені тепер має `mcp_servers: []` (`evidence/session-excerpts.md`, 5.3). Кожен крок,
   якому потрібен сервер, вмикає рівно один через `--strict-mcp-config --mcp-config`.
+- **Закріплено в репозиторії (04.10, після рецензії CodeRabbit).** Той самий ключ
+  `disabledMcpjsonServers` додано в закомічений `.claude/settings.json`, а для кожного сервера — профіль
+  `docs/mcp/profiles/<сервер>.json`. У свіжому клоні без профілю жоден сервер не стартує, з профілем —
+  лише його сервер (`evidence/session-excerpts.md`, 5.6).
 - Перелік інструментів сесії й панель конекторів — спостереження, окремого файлу-артефакту немає.
 
 **`--allowed-origins` під атакою** (04.10, 4 нові сесії `claude -p` лише з `playwright`, Claude Code
