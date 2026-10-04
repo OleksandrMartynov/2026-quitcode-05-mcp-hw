@@ -6,7 +6,7 @@
 - **Сервер** (скоуп `local`; код заморожено тегом `ab-freeze` = `b759f1d`):
   `claude mcp add leaddesk -- node "/Users/alexmart/Work/Agentic Development Course/05/mcp/leaddesk-server/src/server.mjs"`.
 - **Запуск:** `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --model claude-opus-5-5 --effort high --permission-mode default --disallowedTools "Bash,WebFetch,WebSearch"`.
-- **`/mcp` на початку:** `1 server · Local MCPs · ✔ leaddesk 2 tools` (знімок `screens/b-00-mcp.jpg`).
+- **`/mcp` на початку:** `1 server · Local MCPs · ✔ leaddesk 2 tools`. Знімок `screens/b-00-mcp.jpg` зроблено в цій сесії (вкладка «B: ПРОГІН») перед запитом 1; у журнал сесії відкриття панелі `/mcp` не потрапляє.
 - **Режим дозволів:** ручний (`default`) усю сесію. Кожен MCP-виклик ішов через діалог.
 - **Як отримано.** Журнал сесії Claude Code (JSONL) перетворено в Markdown скриптом без змін у тексті:
   повідомлення, виклики з аргументами, повні результати й відповіді. Запити на схвалення взято зі
@@ -209,7 +209,7 @@ Esc to cancel · Tab to amend
 }
 ```
 
-**Запит на схвалення:** немає (вбудований інструмент Claude Code, діалогу не було)
+**Запит на схвалення:** немає — Claude Code читає ресурс MCP без діалогу (знімок `screens/b-q4-resource-no-dialog.jpg`, у рядку стану — «manual mode on»)
 
 <details><summary>Результат: 1634 символів</summary>
 

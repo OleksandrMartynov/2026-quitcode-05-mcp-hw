@@ -6,7 +6,7 @@
 - **Сервер** (скоуп `local`):
   `claude mcp add --transport http supabase "https://mcp.supabase.com/mcp?project_ref=owtlfrumfipydwpedpid&read_only=true&features=database,docs"`.
 - **Запуск:** `ENABLE_CLAUDEAI_MCP_SERVERS=false claude --model claude-opus-5-5 --effort high --disallowedTools "Bash,WebFetch,WebSearch"`.
-- **`/mcp` на початку:** `1 server · Local MCPs · ✔ supabase 5 tools` (знімок `screens/a-00-mcp.jpg`).
+- **`/mcp` на початку:** `1 server · Local MCPs · ✔ supabase 5 tools`. Знімок `screens/a-00-mcp.jpg` зроблено в цій сесії (вкладка «A2: ПРОГІН») перед запитом 1; у журнал сесії відкриття панелі `/mcp` не потрапляє.
 - **Як отримано.** Журнал сесії Claude Code (JSONL) перетворено в Markdown скриптом без змін у тексті:
   повідомлення, виклики з аргументами, повні результати й відповіді. Запити на схвалення взято зі
   знімків екрана в `screens/`, перенесення рядків терміналу прибрано. Внутрішніх міркувань моделі
