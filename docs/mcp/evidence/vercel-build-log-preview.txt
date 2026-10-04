@@ -1,8 +1,8 @@
 Running build in Washington, D.C., USA (East) – iad1
 Build machine configuration: 2 cores, 8 GB
 Cloning github.com/OleksandrMartynov/2026-quitcode-05-mcp-hw (Branch: main, Commit: 958d2ee)
-Previous build caches not available.
-Cloning completed: 314.000ms
+Skipping build cache, deployment was triggered without cache.
+Cloning completed: 294.000ms
 Running "vercel build"
 Vercel CLI 62.1.0
 Installing dependencies...
@@ -29,7 +29,7 @@ Running "npm run build"
 
 ▲ Next.js 16.3.5 (Turbopack)
   Applying modifyConfig from Vercel
-✓ Running next.config.ts took 251ms
+✓ Running next.config.ts took 129ms
 Attention: Next.js now collects completely anonymous telemetry regarding usage.
 This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
@@ -37,16 +37,16 @@ https://nextjs.org/telemetry
 
 
   Creating an optimized production build ...
-✓ Compiled successfully in 9.8s
+✓ Compiled successfully in 9.6s
   Running TypeScript ...
-  Finished TypeScript in 3.4s ...
+  Finished TypeScript in 3.5s ...
   Collecting page data using 1 worker ...
   Generating static pages using 1 worker (0/8) ...
   Generating static pages using 1 worker (2/8) 
 db:listUsers: 1
   Generating static pages using 1 worker (4/8) 
   Generating static pages using 1 worker (6/8) 
-✓ Generating static pages using 1 worker (8/8) in 267ms
+✓ Generating static pages using 1 worker (8/8) in 196ms
   Finalizing page optimization ...
   Running onBuildComplete from Vercel
 
@@ -71,6 +71,6 @@ Build Completed in /vercel/output [29s]
 Deploying outputs...
 Deployment completed
 Creating build cache...
-Created build cache: 12s
-Uploading build cache [165.44 MB]
-Build cache uploaded: 2.481s
+Created build cache: 10s
+Uploading build cache [165.47 MB]
+Build cache uploaded: 1.883s

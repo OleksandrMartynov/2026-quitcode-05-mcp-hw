@@ -198,7 +198,7 @@ vercel: not found in PATH
 
 ## 3. Vercel: лог білду після повторного входу (`claude -p`, Claude Code 2.1.288, 03.10.2026)
 
-Запуск: `claude -p --strict-mcp-config --mcp-config <лише vercel>`; той самий запит. Повний текст 76 подій — у `vercel-build-log.txt`. Режим дозволів за журналом (поле `permissionMode`): `default` (1 записів).
+Запуск: `claude -p --strict-mcp-config --mcp-config <лише vercel>`; той самий запит. Повний текст 76 подій — у `vercel-build-log-preview.txt`. Режим дозволів за журналом (поле `permissionMode`): `default` (1 запис).
 
 - `Read`: файл авто-пам'яті Claude Code цієї теки (`~/.claude/projects/…/memory/ws5-homework-plan.md`) — вміст не наводимо
 
@@ -218,6 +218,16 @@ vercel: not found in PATH
 
 ```
 76 подій; перша: "Running build in Washington, D.C., USA (East) – iad1"; остання: "Build cache uploaded: 1.883s"
+```
+
+### 3.1. Лог production-деплою (`claude -p`, Claude Code 2.1.289, 04.10.2026)
+
+Запуск: `ENABLE_CLAUDEAI_MCP_SERVERS=false claude -p --model claude-opus-5-5 --effort high --permission-mode default --strict-mcp-config --mcp-config <лише vercel> --disallowedTools "Bash,WebFetch,WebSearch"`; у запиті — id production-деплою, `teamId` і параметри виклику. Повний текст 76 подій — у `vercel-build-log.txt`. Режим дозволів за журналом (поле `permissionMode`): `default` (1 запис).
+
+- `list_deployment_events` {"idOrUrl":"dpl_6EoDh7VFCmdFKV4gRj657fRRi2NW","teamId":"team_…","builds":1,"limit":-1}
+
+```
+76 подій; перша: "Running build in Washington, D.C., USA (East) – iad1"; остання: "Build cache uploaded: 2.481s"
 ```
 
 ## 4. Playwright (`claude -p --strict-mcp-config`, лише `playwright`, 03.10.2026)

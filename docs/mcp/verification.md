@@ -259,11 +259,18 @@ select current_user, session_user, current_setting('is_superuser');
     `--allowedTools`, як ручне схвалення в інтерактиві.
   - Ланцюжок: `list_teams` → `list_projects` → `list_deployments` →
     `list_deployment_events {"builds":1,"limit":-1}` → 76 подій.
-  - `docs/mcp/evidence/vercel-build-log.txt` — тексти цих подій по порядку, без змін.
-  - Деплой найновіший: preview з кроку вище, той самий `main` `958d2ee` (`list_deployments` у
-    `session-excerpts.md`, розділ 3). Тобто лог у файлі — це білд preview, створеного агентом через
-    MCP, а не production-білд з git-інтеграції. Код той самий; лог production-білду ми не знімали. У лозі є «✓ Compiled
-    successfully in 9.6s», «Build Completed in /vercel/output [29s]», «Deployment completed».
+  - Найновішим виявився preview з кроку вище, той самий `main` `958d2ee` (`list_deployments` у
+    `session-excerpts.md`, розділ 3). Тексти цих подій по порядку, без змін, — у
+    `docs/mcp/evidence/vercel-build-log-preview.txt`. У лозі є «✓ Compiled successfully in 9.6s»,
+    «Build Completed in /vercel/output [29s]», «Deployment completed».
+  - Walkthrough просить лог деплою з git-інтеграції, тож 04.10 ми окремо зняли лог production-деплою
+    `dpl_6EoDh7VFCmdFKV4gRj657fRRi2NW` (`main`, `958d2ee`; його зібрала git-інтеграція 03.10). Сесія
+    `claude -p --permission-mode default --strict-mcp-config` лише з `vercel`, один виклик
+    `list_deployment_events {"builds":1,"limit":-1}` з id деплою в запиті, інших викликів і відмов не
+    було (`session-excerpts.md`, розділ 3). 76 подій, тексти по порядку без змін — у
+    `docs/mcp/evidence/vercel-build-log.txt`: «Cloning github.com/OleksandrMartynov/2026-quitcode-05-mcp-hw
+    (Branch: main, Commit: 958d2ee)», «✓ Compiled successfully in 9.8s», «Build Completed in
+    /vercel/output [29s]», «Deployment completed».
   - Вивід `list_teams` і `list_projects` у файли не потрапив.
 
 **Playwright:**
