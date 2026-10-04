@@ -108,5 +108,10 @@
       "mcp__playwright__browser_network_requests",
       "mcp__playwright__browser_wait_for"
     ]
-  }
+  },
+  "disabledMcpjsonServers": [
+    "supabase",
+    "vercel",
+    "playwright"
+  ]
 }
