@@ -184,7 +184,9 @@ answer: | lead_0014 | Nova Dental | facebook-ads | $2500 | 2026-07-27 |
   `auto` (`session-excerpts.md`, розділи 1–2). Помітили це лише на фінальній рецензії. У режимі auto
   виклики, які не дозволено й не заборонено правилами, пропускає або зупиняє класифікатор, а не
   людина. Чи показував Claude Code діалог перед конкретним викликом, журнал не фіксує. Сесії
-  `claude -p` (лог білду, Playwright) ішли в режимі `default`.
+  `claude -p` (лог білду, Playwright) ішли в режимі `default`. З 04.10 `.claude/settings.json` має
+  `permissions.defaultMode: "default"`: нова сесія без прапорця стартувала в ручному режимі
+  (`session-excerpts.md`, 5.7).
 - **Докази.** Виклики й результати нижче — з журналів сесій; витяги з них (з редагуванням) — у
   `docs/mcp/evidence/session-excerpts.md`, розділи 1–4.
 

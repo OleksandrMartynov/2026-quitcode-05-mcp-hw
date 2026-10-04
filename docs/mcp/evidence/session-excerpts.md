@@ -505,6 +505,19 @@ $ claude -p … --strict-mcp-config --mcp-config docs/mcp/profiles/playwright.js
   Claude Code 2.1.289 mcp_servers [{"name":"playwright","status":"connected","source":"dynamic"}]
 ```
 
+**5.7. `permissions.defaultMode: "default"` у `.claude/settings.json`.** Для CLI цього акаунта за замовчуванням стоїть auto mode (розділи 1–2). Після ключа людина запустила інтерактивну сесію в корені репозиторію без `--permission-mode` і надіслала «ок». Рядок стану — «manual mode on» (знімок `default-mode-status-line.jpg`); з журналу:
+
+```
+$ ENABLE_CLAUDEAI_MCP_SERVERS=false claude   # корінь репозиторію, без --permission-mode
+session 794d81ac…, Claude Code 2.1.289, permissionMode у журналі: {"default":4}
+prompt: ок
+tool_use: Read файл авто-пам'яті цієї теки (вміст не наводимо) → виконано без діалогу
+tool_use: Bash git diff --stat && git diff .claude/settings.json → виконано без діалогу
+tool_use: Bash gh pr view 2 --repo koldovsky/2026-quitcode-05-mcp-hw --json state,headRefOid,updatedAt,reviewDecision → відмова: The user doesn't want to proceed with this tool use
+```
+
+Read-only `git diff` пройшов без діалогу, як у 5.2; `gh pr view` пішов у діалог, і людина відмовила.
+
 ## 6. Task A: коди виходу Inspector, мутації, пастка E1
 
 **Коди виходу чотирьох команд Inspector** (`verification.md`, Task A) і stderr команди з поганим входом — вивід скрипта, що запускав ці команди:

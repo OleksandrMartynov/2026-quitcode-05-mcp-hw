@@ -71,7 +71,9 @@
 ENABLE_CLAUDEAI_MCP_SERVERS=false claude --permission-mode default --strict-mcp-config --mcp-config docs/mcp/profiles/supabase.json
 ```
 
-(так само `vercel.json` і `playwright.json`). Перевірено у свіжому клоні: без профілю `claude mcp list`
+(так само `vercel.json` і `playwright.json`). Там само `permissions.defaultMode: "default"`: сесії в
+цій теці стартують у ручному режимі, а не в auto mode з налаштувань акаунта, навіть без прапорця
+(перевірено: `evidence/session-excerpts.md`, 5.7). Перевірено у свіжому клоні: без профілю `claude mcp list`
 пише «No MCP servers configured», а `claude -p` має `mcp_servers: []`; з профілем `playwright.json` —
 лише `playwright: connected` (`evidence/session-excerpts.md`, 5.6). Кроки нижче йшли ще з локальними
 копіями цих профілів.
