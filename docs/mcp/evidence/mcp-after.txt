@@ -1,21 +1,32 @@
-browser_navigate
-browser_navigate_back
-browser_tabs
-browser_close
-browser_resize
-browser_click
-browser_hover
-browser_drag
-browser_type
-browser_press_key
-browser_fill_form
-browser_select_option
-browser_handle_dialog
-browser_wait_for
-browser_snapshot
-browser_find
-browser_take_screenshot
-browser_console_messages
-browser_network_requests
-browser_network_request
-browser_emulate_media
+Зараз підключено **21 інструмент** сервера `playwright`. Я бачу лише їхні назви. Схеми параметрів і описи не завантажені, бо я нічого не викликав, зокрема й `ToolSearch`.
+
+**Навігація та вкладки**
+1. `mcp__playwright__browser_navigate`
+2. `mcp__playwright__browser_navigate_back`
+3. `mcp__playwright__browser_tabs`
+4. `mcp__playwright__browser_close`
+5. `mcp__playwright__browser_resize`
+
+**Взаємодія зі сторінкою**
+6. `mcp__playwright__browser_click`
+7. `mcp__playwright__browser_hover`
+8. `mcp__playwright__browser_drag`
+9. `mcp__playwright__browser_type`
+10. `mcp__playwright__browser_press_key`
+11. `mcp__playwright__browser_fill_form`
+12. `mcp__playwright__browser_select_option`
+13. `mcp__playwright__browser_handle_dialog`
+14. `mcp__playwright__browser_wait_for`
+
+**Читання стану сторінки**
+15. `mcp__playwright__browser_snapshot`
+16. `mcp__playwright__browser_find`
+17. `mcp__playwright__browser_take_screenshot`
+18. `mcp__playwright__browser_console_messages`
+19. `mcp__playwright__browser_network_requests`
+20. `mcp__playwright__browser_network_request`
+21. `mcp__playwright__browser_emulate_media`
+
+Серед доступних немає інструментів для виконання довільного JavaScript на сторінці (`browser_evaluate`, `browser_run_code`), для завантаження файлів (`browser_file_upload`) і для встановлення браузера (`browser_install`). Можливо, їх вимкнено в конфігурації сервера.
+
+За правилами проєкту в цій сесії не можна вмикати Supabase разом із браузерним сервером. Логінитися в браузері агента теж не можна ніде.

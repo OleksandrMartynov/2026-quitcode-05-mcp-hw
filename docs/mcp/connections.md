@@ -61,7 +61,8 @@
 Правило: у кожній сесії — щонайбільше один сервер із правом запису, а браузерний сервер ніколи не
 працює разом із Supabase. У CLI-сесіях із запитами до агента його дотримано. У сесії входу (OAuth)
 були всі три сервери разом, але агенту нічого не писали (`/exit` одразу після входу). Основна робоча
-сесія правило порушувала до 04.10 — див. останній рядок таблиці.
+сесія правило порушила 04.10, від перезапуску застосунку о 10:18 до зміни налаштувань о 10:51 — див.
+останній рядок таблиці.
 
 **Як правило закріплено в репозиторії (з 04.10).** `.claude/settings.json` вимикає автозапуск усіх
 трьох серверів з `.mcp.json` (`disabledMcpjsonServers`), а кожен крок вмикає рівно один сервер
@@ -85,7 +86,7 @@ ENABLE_CLAUDEAI_MCP_SERVERS=false claude --permission-mode default --strict-mcp-
 | Лог білду | лише `vercel` (`--strict-mcp-config`; перша сесія — інтерактивна в режимі auto, лог — `claude -p` у режимі `default`) | `vercel`: у першій сесії `create_deployment` ще не був під deny і створив preview (див. verification.md). Лог цього preview — у `evidence/vercel-build-log-preview.txt`; основний `evidence/vercel-build-log.txt` — лог production-деплою з git-інтеграції (`claude -p`, лише читання, 04.10). Preview людина вирішила лишити: у проєкті `ssoProtection` (`all_except_custom_domains`), тож без входу у Vercel він не відкривається. Після звуження записуючих інструментів немає |
 | Перевірка форми й знімки «до/після» | лише `playwright` (`claude -p --strict-mcp-config`) | `playwright` (браузер) |
 | A/B (Task C) | A — лише `supabase` з `read_only=true`; B — лише `leaddesk` | A — жоден; B — `leaddesk` |
-| Основна робоча сесія (десктоп-застосунок Claude, корінь репозиторію; режим auto) | **До 04.10:** `supabase`, `vercel`, `playwright` разом — схвалення з кроку входу записалось у `.claude/settings.local.json` як `enabledMcpjsonServers`; плюс браузерні інструменти самого застосунку. Жодного виклику цих серверів у сесії не було: скрипт перевірив журнали сесії і всіх її субагентів (`verification.md`, «Спостереження…»). **З 04.10:** `disabledMcpjsonServers` з усіма трьома — спершу в `.claude/settings.local.json` (сесія від'єднала всі три, `claude -p` у корені — `mcp_servers: []`, `session-excerpts.md`, 5.3), потім і в закоміченому `.claude/settings.json` | до 04.10 — `supabase` і `vercel` разом із браузером, тобто порушення правила вище (див. `threat-model.md`); з 04.10 — жоден |
+| Основна робоча сесія (десктоп-застосунок Claude, корінь репозиторію; режим auto) | **04.10, з 10:18 до 10:51** (від перезапуску застосунку до зміни налаштувань; повідомлення про від'єднання сесія отримала о 16:21; на 03.10 цих інструментів у сесії не було): `supabase`, `vercel`, `playwright` разом — схвалення з кроку входу записалось у `.claude/settings.local.json` як `enabledMcpjsonServers`; плюс браузерні інструменти самого застосунку. Жодного виклику цих серверів у сесії не було: скрипт перевірив журнали сесії і всіх її субагентів (`verification.md`, «Спостереження…»). **З 04.10:** `disabledMcpjsonServers` з усіма трьома — спершу в `.claude/settings.local.json` (сесія від'єднала всі три, `claude -p` у корені — `mcp_servers: []`, `session-excerpts.md`, 5.3), потім і в закоміченому `.claude/settings.json` | 04.10 з 10:18 — `supabase` і `vercel` разом із браузером, тобто порушення правила вище (див. `threat-model.md`); після зміни налаштувань — жоден |
 
 ## До і після звуження: третій сервер
 
@@ -94,11 +95,14 @@ ENABLE_CLAUDEAI_MCP_SERVERS=false claude --permission-mode default --strict-mcp-
     які тобі зараз доступні. Нічого не викликай.»
   - `claude-opus-5-5`, effort `high`. Жодного виклику не було, і в обох знімках набір збігся з
     `init` (`session-excerpts.md`, 4.1).
-  - У «після» агент писав повні імена `mcp__playwright__…`; у файлі вони без префікса, як у «до».
-- `docs/mcp/evidence/mcp-before.txt`: **25** інструментів, серед них `browser_run_code_unsafe`.
+  - Обидва файли — дослівні відповіді агентів: текст останнього повідомлення з журналу сесії без змін
+    (у «до» агент писав імена без префікса й зі своїми поясненнями, у «після» — повні імена
+    `mcp__playwright__…`). Кожен інструмент стоїть в окремому рядку нумерованого списку.
+- `docs/mcp/evidence/mcp-before.txt`: **25** інструментів, серед них `browser_run_code_unsafe` (пункт 25).
 - `docs/mcp/evidence/mcp-after.txt`: **21** інструмент. Зникли `browser_run_code_unsafe`,
   `browser_file_upload`, `browser_drop`, `browser_evaluate`; `webmcp_*` не було й до того завдяки
-  `--no-webmcp`.
+  `--no-webmcp`. Згадки `browser_evaluate` і `browser_file_upload` в останньому абзаці «після» — це
+  слова агента про те, що цих інструментів серед доступних немає.
 - **Атака.** На прохання викликати `browser_run_code_unsafe` і `browser_evaluate` агент отримав від
   `ToolSearch` «No matching deferred tools found»: модель цих інструментів не бачить
   (`session-excerpts.md`, 4.2).

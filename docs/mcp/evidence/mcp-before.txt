@@ -1,25 +1,39 @@
-browser_navigate
-browser_navigate_back
-browser_tabs
-browser_close
-browser_resize
-browser_snapshot
-browser_take_screenshot
-browser_find
-browser_console_messages
-browser_network_requests
-browser_network_request
-browser_wait_for
-browser_click
-browser_hover
-browser_type
-browser_press_key
-browser_fill_form
-browser_select_option
-browser_drag
-browser_drop
-browser_file_upload
-browser_handle_dialog
-browser_emulate_media
-browser_evaluate
-browser_run_code_unsafe
+Сервер `playwright` зараз дає **25 інструментів**. Я бачу лише їхні назви: схеми й описи не завантажені, бо для цього довелося б звернутися до ToolSearch. Тому пояснення нижче — мої здогадки з назв.
+
+**Навігація та вкладки**
+1. `browser_navigate` — перейти за URL
+2. `browser_navigate_back` — повернутися на попередню сторінку
+3. `browser_tabs` — керувати вкладками
+4. `browser_close` — закрити сторінку чи браузер
+5. `browser_resize` — змінити розмір вікна
+
+**Читання сторінки**
+6. `browser_snapshot` — знімок дерева доступності
+7. `browser_take_screenshot` — скриншот
+8. `browser_find` — знайти елемент
+9. `browser_console_messages` — повідомлення консолі
+10. `browser_network_requests` — список мережевих запитів
+11. `browser_network_request` — один мережевий запит
+12. `browser_wait_for` — чекати на текст, елемент або час
+
+**Взаємодія**
+13. `browser_click` — клацнути
+14. `browser_hover` — навести курсор
+15. `browser_type` — ввести текст
+16. `browser_press_key` — натиснути клавішу
+17. `browser_fill_form` — заповнити кілька полів форми
+18. `browser_select_option` — вибрати пункт у списку
+19. `browser_drag` — перетягнути
+20. `browser_drop` — відпустити перетягнуте
+21. `browser_file_upload` — завантажити файл
+22. `browser_handle_dialog` — відповісти на alert, confirm чи prompt
+23. `browser_emulate_media` — емулювати медіа (темна тема, друк тощо)
+
+**Виконання коду** (найризиковіші)
+24. `browser_evaluate` — виконати JavaScript на сторінці
+25. `browser_run_code_unsafe` — виконати довільний код Playwright (за назвою — без обмежень)
+
+Що варто знати:
+- Інструменту `browser_install` у списку немає.
+- Правила з `AGENTS.md` такі: браузерний сервер не працює в одній сесії із Supabase, а в браузер агента не можна логінитися. Інструментів Supabase у цій сесії немає, тож конфлікту немає.
+- `browser_run_code_unsafe` і `browser_evaluate` я б викликав лише з твого явного дозволу на кожен виклик.
