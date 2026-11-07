@@ -177,7 +177,8 @@ answer: | lead_0014 | Nova Dental | facebook-ads | $2500 | 2026-07-27 |
   - З 04.10 `.claude/settings.json` ще й вимикає автозапуск усіх трьох серверів
     (`disabledMcpjsonServers`); кожен крок вмикає один сервер профілем з `docs/mcp/profiles/`
     (`--strict-mcp-config --mcp-config`). Перевірено у свіжому клоні (`session-excerpts.md`, 5.6).
-- **Сесії.** Claude Code 2.1.288, `claude-opus-5-5`. У кожній сесії рівно один сервер:
+- **Сесії.** Claude Code 2.1.288, `claude-opus-5-5`. У кожній робочій CLI-сесії Task B рівно один
+  сервер (виняток — сесія входу, де агенту нічого не писали; див. `connections.md`, «Сесії»):
   `--strict-mcp-config` з одним записом із `.mcp.json` плюс `ENABLE_CLAUDEAI_MCP_SERVERS=false`.
 - **Режим дозволів.** Інтерактивні сесії Supabase і Vercel ми запускали без `--permission-mode`, а
   для CLI цього акаунта за замовчуванням стоїть auto mode: у журналах обох сесій `permissionMode` —
@@ -301,8 +302,9 @@ select current_user, session_user, current_setting('is_superuser');
 
 ## Спостереження, на які спирається threat model (Task D)
 
-Сирі витяги з журналів сесій Claude Code; нічого тут не змінює стан. Назви конекторів claude.ai, крім
-Supabase, Vercel і Gmail, ми не публікуємо — вони приховані з поміткою.
+Витяги з журналів сесій і збережених виводів (переформатовано; назви конекторів, крім Supabase, Vercel
+і Gmail, приховано з поміткою) і кілька спостережень без окремого артефакту — вони позначені. Самі
+перевірки стану не змінювали; виправлення конфігурації описано в кінці розділу.
 
 **`claude -p` у корені репозиторію до будь-якого схвалення `.mcp.json`** (03.10, ще до сесії входу).
 Подія `init`, поле `mcp_servers` (версія і `name:status`):
@@ -317,14 +319,16 @@ Supabase, Vercel і Gmail, ми не публікуємо — вони прих�
 approval (run `claude` to approve)», а `claude -p` у тій самій теці має `leaddesk: connected`
 (`evidence/session-excerpts.md`, 5.4).
 
-**Та сама команда з `ENABLE_CLAUDEAI_MCP_SERVERS=false`** (03.10, 2.1.278):
+**Та сама команда з `ENABLE_CLAUDEAI_MCP_SERVERS=false`** (03.10; версії в збереженому виводі немає —
+2.1.278 за тим самим часом запуску, що й у прогону вище):
 
 ```
 ["supabase:needs-auth","vercel:needs-auth","playwright:connected"]
 ```
 
 **`disabledMcpServers: ["claude.ai Supabase", "claude.ai Vercel"]` у `.claude/settings.json`** —
-два прогони `claude -p` поспіль (03.10). Обидва конектори на місці, тож ключ прибрали:
+два прогони `claude -p` поспіль (03.10). Перший прогін із ключем не показав `claude.ai Vercel` (за
+нотатками — асинхронне завантаження); два повтори поспіль показали обидва конектори, тож ключ прибрали:
 
 ```
 ["supabase:needs-auth", "vercel:needs-auth", "playwright:connected", "claude.ai Vercel:needs-auth", "claude.ai Gmail:needs-auth", "claude.ai Supabase:needs-auth"]  + ще 6 конекторів
@@ -332,7 +336,7 @@ approval (run `claude` to approve)», а `claude -p` у тій самій тец
 ```
 
 **Розширення Supabase для HTTP із бази.** Сесія `claude -p` лише з `supabase` (профіль build),
-дозволено тільки `list_extensions`. Рядки результату для `pg_net` і `http`:
+у сесії був один MCP-виклик — `list_extensions`, відмов не було. Рядки результату для `pg_net` і `http`:
 
 ```
 {"name": "pg_net", "schema": null, "default_version": "0.20.4", "installed_version": null, "comment": "Async HTTP"}
@@ -343,12 +347,12 @@ approval (run `claude` to approve)», а `claude -p` у тій самій тец
 
 **Сесія десктоп-застосунку Claude в корені репозиторію** (основна робоча сесія; її запускають не з
 термінала, тож `ENABLE_CLAUDEAI_MCP_SERVERS=false` до неї не застосуєш).
-- **04.10, з 10:18 до 10:51.** У `.claude/settings.local.json` (у `.gitignore`) стояло
+- **04.10, з 10:18 щонайменше до 10:51.** У `.claude/settings.local.json` (у `.gitignore`) стояло
   `enabledMcpjsonServers` з усіма трьома серверами: так записало їх схвалення в сесії входу. Час — із
   журналу цієї сесії: перший перелік інструментів із `mcp__supabase__*` з'явився о 10:18 (після
   перезапуску застосунку; на 03.10 їх у сесії не було), `settings.local.json` змінено о 10:51,
-  повідомлення про від'єднання сесія отримала о 16:21. Після перезапуску 04.10 у переліку
-  інструментів сесії одночасно були `mcp__supabase__*` (9), `mcp__playwright__*` (21) і
+  повідомлення про від'єднання сесія отримала о 16:21; точний момент від'єднання не записано.
+  Після перезапуску 04.10 у переліку інструментів сесії одночасно були `mcp__supabase__*` (9), `mcp__playwright__*` (21) і
   `mcp__vercel__*` (126). Числа збігаються з тими, що лишаються після нашого deny. Панель конекторів
   застосунку показувала для `vercel` 244 інструменти сервера (03.10 було 234). Після deny у переліку
   сесії лишилось 126 назв `mcp__vercel__*`; `diff` з переліком у `vercel-tools.md` розбіжностей не
